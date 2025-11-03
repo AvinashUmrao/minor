@@ -24,7 +24,6 @@ import CreateBlog from "./pages/CreateBlog";
 import Auth from "./pages/Auth";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ProgressPage from "./pages/ProgressPage";
-import Placements from "./pages/Placements";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,7 +57,6 @@ const App = () => (
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/leaderboard" element={<LeaderboardPage />} />
                     <Route path="/progress" element={<ProgressPage />} />
-                    <Route path="/placements" element={<Placements />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>

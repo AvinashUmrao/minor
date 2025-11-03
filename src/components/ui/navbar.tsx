@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, BookOpen, Users, Award, Search, Shield, Briefcase } from "lucide-react";
+import { Menu, X, BookOpen, Users, Award, Search, Shield } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +13,6 @@ const Navbar = () => {
   const navigation = [
     { name: "Home", href: "/", icon: BookOpen },
     { name: "Exam Prep", href: "/exam-prep", icon: Award },
-    { name: "Placements", href: "/placements", icon: Briefcase },
     { name: "Blogs", href: "/blogs", icon: Users },
     { name: "Plagiarism Check", href: "/plagiarism", icon: Shield },
     { name: "Plague Check", href: "/plague-check", icon: Search },
