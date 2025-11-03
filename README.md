@@ -263,7 +263,6 @@ learnwise-smart-hub/
 │   ├── data/                    # Static data and question banks
 │   │   ├── badges.ts           # Badge definitions
 │   │   ├── jeeQuestionBank.ts  # JEE questions
-│   │   ├── placementData.ts    # Placement preparation data
 │   │   └── *.ts                # Other data files
 │   │
 │   ├── lib/                     # Utility functions and libraries
@@ -392,7 +391,6 @@ Detailed documentation is available for each major system:
 - **[GATE System](./ENHANCED_QUIZ_SYSTEM.md)** - GATE quiz system details
 - **[Blog System](./BLOG_SYSTEM_GUIDE.md)** - Blog creation and management
 - **[Quick Start Guide](./QUICK_START.md)** - Get started quickly
-- **[Placement System](./PLACEMENT_SYSTEM.md)** - Placement preparation features
 
 ---
 
