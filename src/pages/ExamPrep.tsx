@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ExamCard } from "@/components/exam/ExamCard";
-import { FeaturedExamSection } from "@/components/exam/FeaturedExamSection";
 import { WhyChooseSection } from "@/components/exam/WhyChooseSection";
 import { examOptions } from "@/data/sampleData";
 
@@ -33,7 +32,6 @@ const ExamPrep = () => {
           ))}
         </div>
 
-        <FeaturedExamSection />
         <WhyChooseSection />
       </div>
     </div>

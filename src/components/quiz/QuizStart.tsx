@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCategory, getRating } from "@/lib/adaptive";
 import { subjects, getTopicsBySubject } from "@/data/questionBank";
-import { getStreakData, getEarnedBadges } from "@/lib/gamification";
+import { useStreak } from "@/hooks/useStreak";
+import { useBadges } from "@/hooks/useBadges";
+import { useRating } from "@/hooks/useRating";
 
 interface QuizStartProps {
   onStart: (quizType: 'topic' | 'subject' | 'full', duration: number, subject?: string, topic?: string) => void;
@@ -25,8 +27,11 @@ export const QuizStart = ({ onStart, onStartCalibration }: QuizStartProps) => {
   const currentCategory = getCategory('gate', selectedSubject);
   const currentRating = getRating('gate', selectedSubject);
   const availableTopics = getTopicsBySubject(selectedSubject);
-  const streakData = getStreakData();
-  const badges = getEarnedBadges();
+  
+  // Use new gamification hooks for consistent data
+  const { streak, isLoading: streakLoading } = useStreak();
+  const { stats: badgeStats, isLoading: badgesLoading } = useBadges();
+  const { rating, isLoading: ratingLoading } = useRating();
   
   // Set first topic when subject changes
   useEffect(() => {
@@ -122,13 +127,13 @@ export const QuizStart = ({ onStart, onStartCalibration }: QuizStartProps) => {
               {getCategoryIcon(currentCategory)} Category: <span className={`font-bold ml-1 ${getCategoryColor(currentCategory)}`}>{currentCategory}</span>
             </Badge>
             <Badge variant="outline" className="text-base px-4 py-2">
-              <TrendingUp className="w-4 h-4 mr-1" /> Rating: <span className="font-bold ml-1">{currentRating}</span>
+              <TrendingUp className="w-4 h-4 mr-1" /> Rating: <span className="font-bold ml-1">{ratingLoading ? '...' : rating.current}</span>
             </Badge>
             <Badge variant="outline" className="text-base px-4 py-2 bg-orange-500/10 border-orange-500">
-              <Flame className="w-4 h-4 mr-1 text-orange-500" /> Streak: <span className="font-bold ml-1">{streakData.currentStreak} days</span>
+              <Flame className="w-4 h-4 mr-1 text-orange-500" /> Streak: <span className="font-bold ml-1">{streakLoading ? '...' : streak.currentStreak} days</span>
             </Badge>
             <Badge variant="outline" className="text-base px-4 py-2 bg-yellow-500/10 border-yellow-500">
-              <Award className="w-4 h-4 mr-1 text-yellow-500" /> Badges: <span className="font-bold ml-1">{badges.length}</span>
+              <Award className="w-4 h-4 mr-1 text-yellow-500" /> Badges: <span className="font-bold ml-1">{badgesLoading ? '...' : badgeStats.earned}</span>
             </Badge>
           </div>
           <div className="flex justify-center gap-3">

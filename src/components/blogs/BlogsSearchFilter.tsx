@@ -1,20 +1,22 @@
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { blogData } from "@/data/sampleData";
+import { useState, useEffect } from "react";
+import { Blog } from "@/types/blog";
+import { BLOG_CATEGORIES } from "@/types/blog";
 
 interface BlogsSearchFilterProps {
-  onFilterChange: (filteredBlogs: typeof blogData) => void;
+  onFilterChange: (filteredBlogs: Blog[]) => void;
+  allBlogs: Blog[];
 }
 
-export const BlogsSearchFilter = ({ onFilterChange }: BlogsSearchFilterProps) => {
+export const BlogsSearchFilter = ({ onFilterChange, allBlogs }: BlogsSearchFilterProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const categories = ["All", "Study Tips", "GATE", "Wellness", "Technology", "Success Stories"];
+  const categories = ["All", ...BLOG_CATEGORIES];
 
   const filterBlogs = (query: string, category: string) => {
-    let filtered = [...blogData];
+    let filtered = [...allBlogs];
 
     if (query.trim()) {
       const searchLower = query.toLowerCase().trim();
@@ -31,6 +33,11 @@ export const BlogsSearchFilter = ({ onFilterChange }: BlogsSearchFilterProps) =>
 
     onFilterChange(filtered);
   };
+
+  // Re-filter when allBlogs changes (new blog added)
+  useEffect(() => {
+    filterBlogs(searchQuery, activeCategory);
+  }, [allBlogs]);
 
   return (
     <div className="mb-8">

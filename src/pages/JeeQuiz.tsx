@@ -7,6 +7,11 @@ import { useQuiz } from "@/contexts/QuizContext";
 import { buildCalibrationQuiz, buildAdaptiveQuiz, getCategory, getRating, ratingChangeFromPerformance, setRating, analyzePerformance, calibrationAssignment } from "@/lib/adaptive";
 import { getJeeQuestionsBySubject, getJeeQuestionsByTopic, jeeQuestionBank } from "@/data/jeeQuestionBank";
 import { addQuizAttempt, updateStreak, checkAndAwardBadges, getQuizHistory } from "@/lib/gamification";
+import { recordActivity } from "@/lib/streakUtils";
+import { checkAndAwardBadges as checkNewBadges } from "@/lib/badgeUtils";
+import { updateRatingAfterQuiz } from "@/lib/ratingUtils";
+import { getUserStreak } from "@/lib/streakUtils";
+import { getUserRating } from "@/lib/ratingUtils";
 
 type QuizStage = 'start' | 'taking' | 'results';
 
@@ -49,10 +54,10 @@ const JeeQuiz = () => {
         difficulty: quizState.mode === 'calibration' ? 'Mixed' : 'Adaptive',
       });
       
-      // Update streak
+      // Update OLD streak system
       const streakData = updateStreak();
       
-      // Check and award badges
+      // Check and award badges (OLD system)
       const quizHistory = getQuizHistory();
       const newBadges = checkAndAwardBadges(quizAttempt, streakData, quizHistory);
       
@@ -60,6 +65,30 @@ const JeeQuiz = () => {
       if (newBadges.length > 0) {
         console.log('New badges earned:', newBadges);
       }
+      
+      // UPDATE NEW GAMIFICATION SYSTEM
+      // Record activity in new streak system
+      recordActivity('quiz', Math.floor(totalTime / 60));
+      
+      // Update rating in new system
+      const difficulty = quizState.mode === 'calibration' ? 'medium' : 
+        (perf.correct / perf.total) >= 0.8 ? 'hard' : 
+        (perf.correct / perf.total) >= 0.5 ? 'medium' : 'easy';
+      updateRatingAfterQuiz(
+        perf.correct,
+        perf.total,
+        subject || 'general',
+        difficulty as 'easy' | 'medium' | 'hard',
+        totalTime
+      );
+      
+      // Check badge progress in new system
+      const newStreak = getUserStreak();
+      const newRating = getUserRating();
+      checkNewBadges({
+        streak: newStreak,
+        rating: newRating
+      });
     }
   }, [quizState?.isCompleted]);
 

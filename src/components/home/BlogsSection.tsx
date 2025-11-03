@@ -1,9 +1,10 @@
-import { ArrowRight, Clock } from "lucide-react";
+import { ArrowRight, Clock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { blogData } from "@/data/sampleData";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getAllBlogs } from "@/lib/blogUtils";
+import { Blog } from "@/types/blog";
 
 const blogArticles: Record<number, { title: string; content: string; author: string }> = {
 	1: {
@@ -28,23 +29,44 @@ const blogArticles: Record<number, { title: string; content: string; author: str
 
 export const BlogsSection = () => {
 	const [openBlogId, setOpenBlogId] = useState<number | null>(null);
+	const [blogs, setBlogs] = useState<Blog[]>([]);
 
-	if (openBlogId && blogArticles[openBlogId]) {
-		const article = blogArticles[openBlogId];
-		return (
-			<div className="max-w-2xl mx-auto py-10 px-4 animate-fade-in">
-				<Button
-					variant="link"
-					onClick={() => setOpenBlogId(null)}
-					className="mb-4 p-0 h-auto"
-				>
-					← Back to Blogs
-				</Button>
-				<h1 className="text-3xl font-bold mb-4">{article.title}</h1>
-				<div className="text-muted-foreground mb-2">By {article.author}</div>
-				<div className="text-lg">{article.content}</div>
-			</div>
-		);
+	// Load blogs on mount
+	useEffect(() => {
+		const allBlogs = getAllBlogs();
+		// Show only first 3 blogs on home page
+		setBlogs(allBlogs.slice(0, 3));
+	}, []);
+
+	if (openBlogId) {
+		const selectedBlog = blogs.find(blog => blog.id === openBlogId);
+		if (selectedBlog) {
+			return (
+				<div className="max-w-2xl mx-auto py-10 px-4 animate-fade-in">
+					<Button
+						variant="link"
+						onClick={() => setOpenBlogId(null)}
+						className="mb-4 p-0 h-auto"
+					>
+						← Back to Blogs
+					</Button>
+					<h1 className="text-3xl font-bold mb-4">{selectedBlog.title}</h1>
+					<div className="text-muted-foreground mb-2">By {selectedBlog.author}</div>
+					<img
+						src={selectedBlog.image}
+						alt={selectedBlog.title}
+						className="w-full rounded-lg mb-6"
+					/>
+					<div className="text-lg whitespace-pre-wrap">{selectedBlog.content}</div>
+					{selectedBlog.isUserCreated && (
+						<div className="mt-6 p-4 bg-accent/30 rounded-lg flex items-center gap-2">
+							<Sparkles className="w-5 h-5 text-primary" />
+							<span className="text-sm">Community Contribution</span>
+						</div>
+					)}
+				</div>
+			);
+		}
 	}
 
 	return (
@@ -62,11 +84,10 @@ export const BlogsSection = () => {
 							Learn from expert educators and successful students.
 						</p>
 					</div>
-					{/* View All Blogs button can still link to /blogs if you have a separate page */}
 				</div>
 
 				<div className="grid md:grid-cols-3 gap-8">
-					{blogData.map((blog) => (
+					{blogs.map((blog) => (
 						<Card
 							key={blog.id}
 							className="overflow-hidden border-0 shadow-soft hover:shadow-medium transition-all duration-300"
@@ -80,7 +101,12 @@ export const BlogsSection = () => {
 							</div>
 							<CardHeader>
 								<div className="flex items-center justify-between mb-2">
-									<Badge variant="secondary">{blog.category}</Badge>
+									<div className="flex items-center gap-2">
+										<Badge variant="secondary">{blog.category}</Badge>
+										{blog.isUserCreated && (
+											<Sparkles className="w-4 h-4 text-primary" />
+										)}
+									</div>
 									<div className="flex items-center text-sm text-muted-foreground">
 										<Clock className="w-4 h-4 mr-1" />
 										{blog.readTime}

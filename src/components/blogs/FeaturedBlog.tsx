@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { blogData } from "@/data/sampleData";
+import { getAllBlogs } from "@/lib/blogUtils";
+import { Blog } from "@/types/blog";
 
 // Dummy full content for each blog article
 const blogArticles: Record<number, { title: string; content: string; author: string }> = {
@@ -71,27 +72,47 @@ const blogArticles: Record<number, { title: string; content: string; author: str
 
 export const FeaturedBlog = () => {
 	const [openBlogId, setOpenBlogId] = useState<number | null>(null);
+	const [blogs, setBlogs] = useState<Blog[]>([]);
 
-	if (openBlogId && blogArticles[openBlogId]) {
-		const article = blogArticles[openBlogId];
-		return (
-			<div className="max-w-2xl mx-auto py-10 px-4 animate-fade-in">
-				<Button
-					variant="link"
-					onClick={() => setOpenBlogId(null)}
-					className="mb-4 p-0 h-auto"
-				>
-					← Back to Blogs
-				</Button>
-				<h1 className="text-3xl font-bold mb-4">{article.title}</h1>
-				<div className="text-muted-foreground mb-2">By {article.author}</div>
-				<div className="text-lg">{article.content}</div>
-			</div>
-		);
+	// Load all blogs on mount
+	useEffect(() => {
+		const allBlogs = getAllBlogs();
+		setBlogs(allBlogs);
+	}, []);
+
+	if (openBlogId) {
+		const selectedBlog = blogs.find(blog => blog.id === openBlogId);
+		if (selectedBlog) {
+			return (
+				<div className="max-w-2xl mx-auto py-10 px-4 animate-fade-in">
+					<Button
+						variant="link"
+						onClick={() => setOpenBlogId(null)}
+						className="mb-4 p-0 h-auto"
+					>
+						← Back to Blogs
+					</Button>
+					<h1 className="text-3xl font-bold mb-4">{selectedBlog.title}</h1>
+					<div className="text-muted-foreground mb-2">By {selectedBlog.author}</div>
+					<img
+						src={selectedBlog.image}
+						alt={selectedBlog.title}
+						className="w-full rounded-lg mb-6"
+					/>
+					<div className="text-lg whitespace-pre-wrap">{selectedBlog.content}</div>
+					{selectedBlog.isUserCreated && (
+						<div className="mt-6 p-4 bg-accent/30 rounded-lg flex items-center gap-2">
+							<Sparkles className="w-5 h-5 text-primary" />
+							<span className="text-sm">Community Contribution</span>
+						</div>
+					)}
+				</div>
+			);
+		}
 	}
 
 	// Display all blogs
-	const featuredBlogs = blogData;
+	const featuredBlogs = blogs;
 
 	return (
 		<div className="mb-16 space-y-12">
@@ -109,9 +130,14 @@ export const FeaturedBlog = () => {
 							/>
 						</div>
 						<div className="p-8">
-							<Badge variant="secondary" className="mb-4">
-								{featuredBlog.category}
-							</Badge>
+							<div className="flex items-center gap-2 mb-4">
+								<Badge variant="secondary">
+									{featuredBlog.category}
+								</Badge>
+								{featuredBlog.isUserCreated && (
+									<Sparkles className="w-5 h-5 text-primary" />
+								)}
+							</div>
 							<h2 className="text-3xl font-bold text-foreground mb-4 leading-tight">
 								{featuredBlog.title}
 							</h2>

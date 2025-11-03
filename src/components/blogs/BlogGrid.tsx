@@ -2,17 +2,17 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Clock, User } from "lucide-react";
-import { blogData } from "@/data/sampleData";
+import { ArrowRight, Clock, User, Sparkles } from "lucide-react";
+import { Blog } from "@/types/blog";
 
 interface BlogGridProps {
-  blogs?: typeof blogData;
+  blogs?: Blog[];
   onReadMore: (id: number) => void;
   selectedBlogId: number | null;
 }
 
 export const BlogGrid = ({
-  blogs = blogData,
+  blogs = [],
   onReadMore,
   selectedBlogId,
 }: BlogGridProps) => {
@@ -48,9 +48,14 @@ export const BlogGrid = ({
             className="w-full rounded-lg mb-6"
           />
           <div className="prose max-w-none">
-            {selectedBlog.content}
-            {/* Add more content here */}
+            <p className="whitespace-pre-wrap">{selectedBlog.content}</p>
           </div>
+          {selectedBlog.isUserCreated && (
+            <div className="mt-6 p-4 bg-accent/30 rounded-lg flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <span className="text-sm">Community Contribution</span>
+            </div>
+          )}
         </div>
       );
     }
@@ -76,7 +81,12 @@ export const BlogGrid = ({
             </div>
             <CardHeader>
               <div className="flex items-center justify-between mb-2">
-                <Badge variant="secondary">{blog.category}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">{blog.category}</Badge>
+                  {blog.isUserCreated && (
+                    <Sparkles className="w-4 h-4 text-primary" />
+                  )}
+                </div>
                 <span className="text-sm text-muted-foreground">
                   {blog.readTime}
                 </span>

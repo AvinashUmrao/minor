@@ -18,10 +18,13 @@ import Cat from "./pages/Cat";
 import Neet from "./pages/Neet";
 import Upsc from "./pages/Upsc";
 import PlagueCheck from "./pages/PlagueCheck";
+import PlagiarismPage from "./pages/PlagiarismPage";
 import Blogs from "./pages/Blogs";
+import CreateBlog from "./pages/CreateBlog";
 import Auth from "./pages/Auth";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ProgressPage from "./pages/ProgressPage";
+import Placements from "./pages/Placements";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,10 +52,13 @@ const App = () => (
                     <Route path="/neet" element={<Neet />} />
                     <Route path="/upsc" element={<Upsc />} />
                     <Route path="/plague-check" element={<PlagueCheck />} />
+                    <Route path="/plagiarism" element={<PlagiarismPage />} />
                     <Route path="/blogs" element={<Blogs />} />
+                    <Route path="/create-blog" element={<CreateBlog />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/leaderboard" element={<LeaderboardPage />} />
                     <Route path="/progress" element={<ProgressPage />} />
+                    <Route path="/placements" element={<Placements />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>

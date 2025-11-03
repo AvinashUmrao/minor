@@ -2,7 +2,7 @@ import { HeroSection } from "@/components/home/HeroSection";
 import { StatsSection } from "@/components/home/StatsSection";
 import { FeaturesSection } from "@/components/home/FeaturesSection";
 import { NewsSection } from "@/components/home/NewsSection";
-import { ChatbotSection } from "@/components/home/ChatbotSection";
+//import { ChatbotSection } from "@/components/home/ChatbotSection";
 import { BlogsSection } from "@/components/home/BlogsSection";
 import { CTASection } from "@/components/home/CTASection";
 
@@ -13,7 +13,7 @@ const Home = () => {
      
       <FeaturesSection />
       <NewsSection />
-      <ChatbotSection />
+      
       <BlogsSection />
       <CTASection />
     </div>
