@@ -59,12 +59,19 @@ export const calculateTFIDF = (documents: string[]): Map<string, number[]> => {
   const allTokens = [...new Set(tokenizedDocs.flat())];
   
   const tfidfMap = new Map<string, number[]>();
+  const numDocs = documents.length;
   
   allTokens.forEach(token => {
-    const tfidfScores = tokenizedDocs.map((doc, docIndex) => {
-      const tf = doc.filter(t => t === token).length / doc.length;
+    const tfidfScores = tokenizedDocs.map((doc) => {
+      // Term Frequency (TF)
+      const termCount = doc.filter(t => t === token).length;
+      const tf = doc.length > 0 ? termCount / doc.length : 0;
+      
+      // Inverse Document Frequency (IDF)
       const docsWithToken = tokenizedDocs.filter(d => d.includes(token)).length;
-      const idf = Math.log(documents.length / (docsWithToken || 1));
+      // Add 1 to avoid log(0) and use log(1 + x) for smoothing
+      const idf = Math.log((numDocs + 1) / (docsWithToken + 1)) + 1;
+      
       return tf * idf;
     });
     tfidfMap.set(token, tfidfScores);
@@ -74,17 +81,30 @@ export const calculateTFIDF = (documents: string[]): Map<string, number[]> => {
 };
 
 export const tfidfSimilarity = (text1: string, text2: string): number => {
+  // Handle empty texts
+  if (!text1 || !text2 || text1.trim().length === 0 || text2.trim().length === 0) {
+    return 0;
+  }
+  
   const tfidfMap = calculateTFIDF([text1, text2]);
   const allTokens = [...tfidfMap.keys()];
+  
+  if (allTokens.length === 0) return 0;
   
   const vector1 = allTokens.map(token => tfidfMap.get(token)![0]);
   const vector2 = allTokens.map(token => tfidfMap.get(token)![1]);
   
+  // Calculate cosine similarity
   const dotProduct = vector1.reduce((sum, val, i) => sum + val * vector2[i], 0);
   const magnitude1 = Math.sqrt(vector1.reduce((sum, val) => sum + val * val, 0));
   const magnitude2 = Math.sqrt(vector2.reduce((sum, val) => sum + val * val, 0));
   
-  return magnitude1 === 0 || magnitude2 === 0 ? 0 : dotProduct / (magnitude1 * magnitude2);
+  if (magnitude1 === 0 || magnitude2 === 0) return 0;
+  
+  const similarity = dotProduct / (magnitude1 * magnitude2);
+  
+  // Ensure result is between 0 and 1
+  return Math.max(0, Math.min(1, similarity));
 };
 
 // ============================================

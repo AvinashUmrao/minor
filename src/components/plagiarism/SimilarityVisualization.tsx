@@ -24,51 +24,65 @@ export const SimilarityVisualization = ({
   const highlightMatches = (text: string, segments: typeof match.matchedSegments, isFirst: boolean) => {
     if (segments.length === 0 || !text) return text;
 
+    // Tokenize text (split into words/tokens)
+    const tokenize = (str: string): string[] => {
+      return str.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ') // Remove special chars
+        .split(/\s+/)
+        .filter(token => token.length > 2); // Ignore very short tokens
+    };
+
+    // Calculate Jaccard similarity (like TF-IDF concept)
+    const calculateTokenSimilarity = (tokens1: string[], tokens2: string[]): number => {
+      const set1 = new Set(tokens1);
+      const set2 = new Set(tokens2);
+      
+      const intersection = new Set([...set1].filter(x => set2.has(x)));
+      const union = new Set([...set1, ...set2]);
+      
+      return union.size > 0 ? intersection.size / union.size : 0;
+    };
+
+    // Dynamic threshold based on overall similarity score
+    // Higher overall score = lower threshold = more lines highlighted
+    const overallScore = match.overallScore;
+    let threshold = 0.4; // Default 40%
+    
+    if (overallScore >= 0.8) {
+      threshold = 0.25; // 80%+ similarity: highlight if 25% token match
+    } else if (overallScore >= 0.6) {
+      threshold = 0.35; // 60-80% similarity: highlight if 35% token match
+    } else if (overallScore >= 0.4) {
+      threshold = 0.45; // 40-60% similarity: highlight if 45% token match
+    } else {
+      threshold = 0.55; // <40% similarity: highlight only if 55% token match
+    }
+
     // Split text into lines
     const lines = text.split('\n');
-    
-    // Create a set of line indices that contain plagiarized content
     const plagiarizedLines = new Set<number>();
     
+    // Check each segment against each line using token-based similarity
     segments.forEach((segment) => {
       const matchedText = isFirst ? segment.text1 : segment.text2;
+      if (!matchedText || matchedText.trim().length === 0) return;
       
-      // Skip empty matches
-      if (!matchedText) return;
+      const matchTokens = tokenize(matchedText);
+      if (matchTokens.length === 0) return;
       
-      const trimmedMatch = matchedText.trim();
-      if (trimmedMatch.length === 0) return;
-      
-      // Split matched text into lines to handle multi-line matches
-      const matchLines = matchedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      
-      // Find which lines in the code contain any part of the matched text
+      // Check each line
       lines.forEach((line, lineIndex) => {
         const trimmedLine = line.trim();
-        
         if (trimmedLine.length === 0) return;
         
-        // Check if this line matches any of the matched segment lines
-        const hasMatch = matchLines.some(matchLine => {
-          // Exact match
-          if (trimmedLine === matchLine) return true;
-          
-          // Line contains the match
-          if (trimmedLine.includes(matchLine)) return true;
-          
-          // Match contains the line
-          if (matchLine.includes(trimmedLine)) return true;
-          
-          // Check for high similarity (70% or more)
-          if (trimmedLine.length > 3 && matchLine.length > 3) {
-            const similarity = calculateLineSimilarity(trimmedLine, matchLine);
-            return similarity >= 0.7;
-          }
-          
-          return false;
-        });
+        const lineTokens = tokenize(trimmedLine);
+        if (lineTokens.length === 0) return;
         
-        if (hasMatch) {
+        // Calculate token-based similarity (TF-IDF style)
+        const similarity = calculateTokenSimilarity(lineTokens, matchTokens);
+        
+        // Highlight if similarity is above dynamic threshold
+        if (similarity >= threshold) {
           plagiarizedLines.add(lineIndex);
         }
       });
@@ -83,7 +97,7 @@ export const SimilarityVisualization = ({
           return (
             <div
               key={lineIndex}
-              className={isPlagiarized ? 'bg-yellow-200 dark:bg-yellow-900/50 -mx-4 px-4 border-l-4 border-yellow-500' : ''}
+              className={isPlagiarized ? 'bg-yellow-300 dark:bg-yellow-700 -mx-4 px-4 py-0.5 border-l-4 border-yellow-600 font-semibold' : ''}
             >
               {line}
               {lineIndex < lines.length - 1 && '\n'}

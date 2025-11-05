@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Assignment, Submission, FileAttachment } from '@/types/plagiarism';
 import { saveSubmission } from '@/lib/plagiarismStorage';
-import { Send, CheckCircle, Upload, X, FileText, Image as ImageIcon } from 'lucide-react';
+import { Send, CheckCircle, Upload, X, FileText, Image as ImageIcon, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { StudentPlagiarismResults } from './StudentPlagiarismResults';
 
 interface SubmissionFormProps {
   assignment: Assignment;
@@ -22,6 +23,7 @@ export const SubmissionForm = ({ assignment, existingSubmission, onSubmitted }: 
   const [attachments, setAttachments] = useState<FileAttachment[]>(existingSubmission?.attachments || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
+  const [showResults, setShowResults] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,6 +116,24 @@ export const SubmissionForm = ({ assignment, existingSubmission, onSubmitted }: 
   const isAlreadySubmitted = !!existingSubmission;
   const requiresFile = assignment.type === 'pdf' || assignment.type === 'image';
   const canSubmit = requiresFile ? attachments.length > 0 : content.trim().length > 0;
+  const hasResults = existingSubmission?.analyzed && existingSubmission?.plagiarismScore !== undefined;
+
+  // Show results view if requested
+  if (showResults && existingSubmission) {
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="outline"
+          onClick={() => setShowResults(false)}
+          className="gap-2"
+        >
+          <X className="w-4 h-4" />
+          Back to Submission
+        </Button>
+        <StudentPlagiarismResults submission={existingSubmission} />
+      </div>
+    );
+  }
 
   return (
     <Card className="p-6">
@@ -238,7 +258,19 @@ export const SubmissionForm = ({ assignment, existingSubmission, onSubmitted }: 
           </div>
         )}
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-between items-center gap-2">
+          {hasResults && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowResults(true)}
+              className="gap-2"
+            >
+              <Eye className="w-4 h-4" />
+              View Plagiarism Results
+            </Button>
+          )}
+          <div className="flex-1" />
           <Button
             type="submit"
             disabled={isSubmitting || !canSubmit}

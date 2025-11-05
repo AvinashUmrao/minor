@@ -28,6 +28,7 @@ export interface Submission {
   attachments?: FileAttachment[];
   plagiarismScore?: number;
   analyzed: boolean;
+  matchedSegments?: string[]; // Array of matched text segments for student view
 }
 
 export interface FileAttachment {
