@@ -1,49 +1,73 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2, RefreshCw, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { newsData } from "@/data/sampleData";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { fetchAllExamNews, type NewsItem } from "@/services/newsService";
+import { toast } from "sonner";
 
-const articles: Record<string, { title: string; content: string }> = {
-  "1": {
-    title: "Exam News: Major Updates for 2025",
-    content: "The 2025 exam season brings several changes to the schedule and format. Students are advised to check the official website for the latest updates and guidelines. Preparation tips and expert advice are also available.",
-  },
-  "2": {
-    title: "Admissions Open: Top Universities Announce Dates",
-    content: "Admissions for the 2025 academic year are now open at several top universities. Applicants should review eligibility criteria and submit their applications before the deadline. Scholarships and financial aid options are also available.",
-  },
-  "3": {
-    title: "Results Declared: Check Your Scores Online",
-    content: "The results for the recent examinations have been declared. Students can check their scores online using their registration number. Re-evaluation and rechecking processes are also outlined on the official portal.",
-  },
-  "4": {
-    title: "Scholarships: New Opportunities Announced",
-    content: "A range of new scholarships have been announced for meritorious and needy students. Application procedures, eligibility, and deadlines are detailed on the scholarship portal.",
-  },
-  "5": {
-    title: "Events: Upcoming Education Fairs",
-    content: "Several education fairs and seminars are scheduled for the coming months. These events provide opportunities for students to interact with representatives from various institutions and learn about new courses.",
-  },
-};
 
 export const NewsSection = () => {
+  const [newsData, setNewsData] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [openArticleId, setOpenArticleId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
 
+  // Fetch news on component mount
+  useEffect(() => {
+    loadNews();
+  }, []);
+
+  const loadNews = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const news = await fetchAllExamNews();
+      
+      if (news && news.length > 0) {
+        setNewsData(news);
+      } else {
+        setError('Unable to fetch live news. Showing latest updates.');
+      }
+    } catch (err) {
+      setError('Unable to fetch live news. Showing latest updates.');
+      console.error('Error loading news:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    toast.info('Refreshing news...');
+    await loadNews();
+    toast.success('News updated!');
+  };
+
   // Show single article
-  if (openArticleId && articles[openArticleId]) {
-    const article = articles[openArticleId];
-    return (
-      <div className="max-w-2xl mx-auto py-10 px-4">
-        <Button variant="link" onClick={() => setOpenArticleId(null)} className="mb-4 p-0 h-auto">
-          ← Back to News
-        </Button>
-        <h1 className="text-3xl font-bold mb-4">{article.title}</h1>
-        <div className="text-lg">{article.content}</div>
-      </div>
-    );
+  if (openArticleId) {
+    const article = newsData.find(item => item.id === openArticleId);
+    if (article) {
+      return (
+        <div className="max-w-2xl mx-auto py-10 px-4">
+          <Button variant="link" onClick={() => setOpenArticleId(null)} className="mb-4 p-0 h-auto">
+            ← Back to News
+          </Button>
+          <Badge variant="secondary" className="mb-4">{article.category}</Badge>
+          <h1 className="text-3xl font-bold mb-4">{article.title}</h1>
+          <p className="text-sm text-muted-foreground mb-4">
+            {article.date} • {article.source}
+          </p>
+          <img src={article.image} alt={article.title} className="w-full h-64 object-cover rounded-lg mb-6" />
+          <div className="text-lg mb-6">{article.summary}</div>
+          <Button asChild>
+            <a href={article.link} target="_blank" rel="noopener noreferrer">
+              Read Full Article <ExternalLink className="ml-2 h-4 w-4" />
+            </a>
+          </Button>
+        </div>
+      );
+    }
   }
 
   // Show all articles
@@ -55,10 +79,19 @@ export const NewsSection = () => {
         </Button>
         <h1 className="text-3xl font-bold mb-8">All News Articles</h1>
         <div className="space-y-8">
-          {Object.entries(articles).map(([id, article]) => (
-            <div key={id} className="border rounded-lg p-6 bg-white shadow">
+          {newsData.map((article) => (
+            <div key={article.id} className="border rounded-lg p-6 bg-card shadow">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="secondary">{article.category}</Badge>
+                <span className="text-sm text-muted-foreground">{article.date}</span>
+              </div>
               <h2 className="text-2xl font-semibold mb-2">{article.title}</h2>
-              <div className="text-base text-gray-700">{article.content}</div>
+              <div className="text-base text-muted-foreground mb-4">{article.summary}</div>
+              <Button variant="link" asChild className="p-0 h-auto">
+                <a href={article.link} target="_blank" rel="noopener noreferrer">
+                  Read More <ExternalLink className="ml-1 h-4 w-4" />
+                </a>
+              </Button>
             </div>
           ))}
         </div>
@@ -76,39 +109,84 @@ export const NewsSection = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Educational News
             </h2>
-            <p className="text-muted-foreground">Stay updated with the latest exam notifications and educational news.</p>
+            <p className="text-muted-foreground">Latest updates and notifications for JEE, NEET, GATE, CAT, and UPSC exams.</p>
           </div>
-          <Button variant="outline" onClick={() => setShowAll(true)}>
-            View All News
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" onClick={handleRefresh} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button variant="outline" onClick={() => setShowAll(true)}>
+              View All News
+            </Button>
+          </div>
         </div>
         
-        <div className="grid md:grid-cols-3 gap-8">
-          {newsData.map((news) => (
-            <Card key={news.id} className="overflow-hidden border-0 shadow-soft hover:shadow-medium transition-all duration-300">
-              <div className="aspect-video overflow-hidden">
-                <img src={news.image} alt={news.title} className="w-full h-full object-cover" />
-              </div>
-              <CardHeader>
-                <div className="flex items-center justify-between mb-2">
-                  <Badge variant="secondary">{news.category}</Badge>
-                  <span className="text-sm text-muted-foreground">{news.date}</span>
+        {error && (
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-200">ℹ️ {error}</p>
+          </div>
+        )}
+        
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-3 text-muted-foreground">Loading latest news...</span>
+          </div>
+        ) : newsData.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground">No news available at the moment.</p>
+            <Button variant="outline" onClick={handleRefresh} className="mt-4">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-8">
+            {newsData.slice(0, 3).map((news) => (
+              <Card key={news.id} className="overflow-hidden border-0 shadow-soft hover:shadow-medium transition-all duration-300">
+                <div className="aspect-video overflow-hidden">
+                  <img 
+                    src={news.image} 
+                    alt={news.title} 
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=800&h=450&fit=crop';
+                    }}
+                  />
                 </div>
-                <CardTitle className="text-lg line-clamp-2">{news.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground line-clamp-3">{news.summary}</p>
-                <Button
-                  variant="link"
-                  className="mt-4 p-0 h-auto text-primary-500"
-                  onClick={() => setOpenArticleId(String(news.id))} // Convert to string
-                >
-                  Read More <ArrowRight className="ml-1 h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <CardHeader>
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant="secondary">{news.category}</Badge>
+                    <span className="text-sm text-muted-foreground">{news.date}</span>
+                  </div>
+                  <CardTitle className="text-lg line-clamp-2">{news.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground line-clamp-3">{news.summary}</p>
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto text-primary"
+                      onClick={() => setOpenArticleId(news.id)}
+                    >
+                      Read More <ArrowRight className="ml-1 h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto"
+                      asChild
+                    >
+                      <a href={news.link} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

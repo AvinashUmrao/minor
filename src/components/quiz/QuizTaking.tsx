@@ -1,11 +1,23 @@
 import { useState } from "react";
-import { Clock, ArrowLeft, ArrowRight, BookOpen, Flag } from "lucide-react";
+import { Clock, ArrowLeft, ArrowRight, BookOpen, Flag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { quizQuestions } from "@/data/sampleData";
 import { useQuiz } from "@/contexts/QuizContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useNavigate } from "react-router-dom";
 
 interface QuizTakingProps {
   currentQuestion: number;
@@ -25,7 +37,9 @@ export const QuizTaking = ({
   onPrevious
 }: QuizTakingProps) => {
   const [showExplanation, setShowExplanation] = useState(false);
-  const { quizState, markForReview } = useQuiz();
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const { quizState, markForReview, resetQuiz } = useQuiz();
+  const navigate = useNavigate();
   const questions = quizState?.questions?.length ? quizState.questions : quizQuestions;
   const question = questions[currentQuestion];
   const progress = ((currentQuestion + 1) / questions.length) * 100;
@@ -37,6 +51,13 @@ export const QuizTaking = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleQuitQuiz = () => {
+    resetQuiz();
+    // Navigate back based on exam type
+    const examName = quizState?.examName || 'gate';
+    navigate(`/${examName}`);
+  };
+
   return (
     <div>
       {/* Quiz Header */}
@@ -45,9 +66,33 @@ export const QuizTaking = ({
           <Badge variant="outline">
             Question {currentQuestion + 1} of {questions.length}
           </Badge>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Clock className="w-4 h-4" />
-            <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="w-4 h-4" />
+              <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
+            </div>
+            <AlertDialog open={showQuitDialog} onOpenChange={setShowQuitDialog}>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                  <X className="w-4 h-4 mr-2" />
+                  Quit Quiz
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you want to quit?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Your progress will be lost and this quiz attempt will not be saved. You can always start a new quiz later.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Continue Quiz</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleQuitQuiz} className="bg-destructive hover:bg-destructive/90">
+                    Yes, Quit Quiz
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
         <Progress value={progress} className="h-2" />

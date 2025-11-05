@@ -122,6 +122,124 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  /* Color Theme: Purple */
+  .theme-purple {
+    --primary: 270 80% 60%;
+    --primary-light: 270 80% 70%;
+    --primary-dark: 270 80% 45%;
+    --secondary: 290 70% 65%;
+    --secondary-light: 290 70% 75%;
+    --ring: 270 80% 60%;
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 50%, hsl(var(--primary-light)) 100%);
+  }
+
+  .theme-purple.dark {
+    --primary: 270 80% 65%;
+    --primary-light: 270 80% 75%;
+    --primary-dark: 270 80% 50%;
+    --secondary: 290 70% 70%;
+    --ring: 270 80% 65%;
+  }
+
+  /* Color Theme: Green */
+  .theme-green {
+    --primary: 142 76% 45%;
+    --primary-light: 142 76% 55%;
+    --primary-dark: 142 76% 35%;
+    --secondary: 160 70% 50%;
+    --secondary-light: 160 70% 60%;
+    --ring: 142 76% 45%;
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 50%, hsl(var(--primary-light)) 100%);
+  }
+
+  .theme-green.dark {
+    --primary: 142 76% 50%;
+    --primary-light: 142 76% 60%;
+    --primary-dark: 142 76% 40%;
+    --secondary: 160 70% 55%;
+    --ring: 142 76% 50%;
+  }
+
+  /* Color Theme: Orange */
+  .theme-orange {
+    --primary: 25 95% 55%;
+    --primary-light: 25 95% 65%;
+    --primary-dark: 25 95% 45%;
+    --secondary: 38 92% 55%;
+    --secondary-light: 38 92% 65%;
+    --ring: 25 95% 55%;
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 50%, hsl(var(--primary-light)) 100%);
+  }
+
+  .theme-orange.dark {
+    --primary: 25 95% 60%;
+    --primary-light: 25 95% 70%;
+    --primary-dark: 25 95% 50%;
+    --secondary: 38 92% 60%;
+    --ring: 25 95% 60%;
+  }
+
+  /* Color Theme: Rose */
+  .theme-rose {
+    --primary: 350 85% 60%;
+    --primary-light: 350 85% 70%;
+    --primary-dark: 350 85% 50%;
+    --secondary: 340 75% 65%;
+    --secondary-light: 340 75% 75%;
+    --ring: 350 85% 60%;
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 50%, hsl(var(--primary-light)) 100%);
+  }
+
+  .theme-rose.dark {
+    --primary: 350 85% 65%;
+    --primary-light: 350 85% 75%;
+    --primary-dark: 350 85% 55%;
+    --secondary: 340 75% 70%;
+    --ring: 350 85% 65%;
+  }
+
+  /* Color Theme: Slate */
+  .theme-slate {
+    --primary: 215 25% 50%;
+    --primary-light: 215 25% 60%;
+    --primary-dark: 215 25% 40%;
+    --secondary: 220 20% 55%;
+    --secondary-light: 220 20% 65%;
+    --ring: 215 25% 50%;
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 50%, hsl(var(--primary-light)) 100%);
+  }
+
+  .theme-slate.dark {
+    --primary: 215 25% 55%;
+    --primary-light: 215 25% 65%;
+    --primary-dark: 215 25% 45%;
+    --secondary: 220 20% 60%;
+    --ring: 215 25% 55%;
+  }
+
+  /* Default Blue Theme (theme-blue class) */
+  .theme-blue {
+    --primary: 235 85% 60%;
+    --primary-light: 235 85% 70%;
+    --primary-dark: 235 85% 45%;
+    --secondary: 250 75% 65%;
+    --secondary-light: 250 75% 75%;
+    --ring: 235 85% 60%;
+  }
+
+  .theme-blue.dark {
+    --primary: 235 85% 65%;
+    --primary-light: 235 85% 75%;
+    --primary-dark: 235 85% 50%;
+    --secondary: 250 75% 70%;
+    --ring: 235 85% 65%;
+  }
 }
 
 @layer base {

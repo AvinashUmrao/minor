@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { QuizProvider } from "@/contexts/QuizContext";
+import { ColorThemeProvider } from "@/contexts/ThemeContext";
 import Navbar from "@/components/ui/navbar";
 import { Footer } from "@/components/layout/Footer";
 import Home from "./pages/Home";
@@ -29,9 +30,10 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AuthProvider>
-        <QuizProvider>
-          <TooltipProvider>
+      <ColorThemeProvider>
+        <AuthProvider>
+          <QuizProvider>
+            <TooltipProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter
@@ -68,6 +70,7 @@ const App = () => (
           </TooltipProvider>
         </QuizProvider>
       </AuthProvider>
+      </ColorThemeProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
