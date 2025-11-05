@@ -214,13 +214,13 @@ export const StreakCalendar = ({
             <TooltipProvider>
               <div className="inline-block min-w-full">
                 {/* Month labels */}
-                <div className="flex gap-[3px] mb-2 ml-8">
+                <div className="flex gap-1 mb-2 ml-10">
                   {monthLabels.map((label, idx) => (
                     <div
                       key={idx}
                       className="text-xs font-medium text-muted-foreground"
                       style={{ 
-                        marginLeft: idx === 0 ? `${label.weekIndex * 13}px` : `${(label.weekIndex - monthLabels[idx - 1].weekIndex) * 13 - 30}px`,
+                        marginLeft: idx === 0 ? `${label.weekIndex * 17}px` : `${(label.weekIndex - monthLabels[idx - 1].weekIndex) * 17 - 30}px`,
                         minWidth: '30px'
                       }}
                     >
@@ -230,13 +230,13 @@ export const StreakCalendar = ({
                 </div>
 
                 {/* Calendar grid - horizontal layout */}
-                <div className="flex gap-[3px]">
+                <div className="flex gap-1">
                   {/* Day labels */}
-                  <div className="flex flex-col gap-[3px] mr-2">
-                    <div className="h-[10px]" /> {/* Spacer */}
+                  <div className="flex flex-col gap-1 mr-2">
+                    <div className="h-[14px]" /> {/* Spacer */}
                     {["Mon", "Wed", "Fri"].map((day, i) => (
-                      <div key={i} className="h-[10px] flex items-center">
-                        <span className="text-[9px] text-muted-foreground w-6 text-right">
+                      <div key={i} className="h-[14px] flex items-center">
+                        <span className="text-[10px] text-muted-foreground w-8 text-right">
                           {day}
                         </span>
                       </div>
@@ -245,7 +245,7 @@ export const StreakCalendar = ({
 
                   {/* Weeks as columns */}
                   {weeks.map((week, weekIndex) => (
-                    <div key={weekIndex} className="flex flex-col gap-[3px]">
+                    <div key={weekIndex} className="flex flex-col gap-1">
                       {week.map((day, dayIndex) => {
                         // Skip Sunday (0), Tuesday (2), Thursday (4), Saturday (6) for labels
                         // But show all days in the grid
@@ -253,7 +253,7 @@ export const StreakCalendar = ({
                           return (
                             <div
                               key={dayIndex}
-                              className="w-[10px] h-[10px]"
+                              className="w-[14px] h-[14px]"
                             />
                           );
                         }
@@ -265,7 +265,7 @@ export const StreakCalendar = ({
                             <TooltipTrigger asChild>
                               <div
                                 className={cn(
-                                  "w-[10px] h-[10px] rounded-sm cursor-pointer transition-all hover:ring-1 hover:ring-primary hover:ring-offset-1",
+                                  "w-[14px] h-[14px] rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-primary hover:ring-offset-1",
                                   getIntensityColor(intensity)
                                 )}
                               />
@@ -283,14 +283,14 @@ export const StreakCalendar = ({
                 </div>
 
                 {/* Legend */}
-                <div className="flex items-center gap-2 mt-4 ml-8 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 mt-4 ml-10 text-xs text-muted-foreground">
                   <span>Less</span>
-                  <div className="flex gap-[3px]">
+                  <div className="flex gap-1">
                     {[0, 1, 2, 3, 4].map((intensity) => (
                       <div
                         key={intensity}
                         className={cn(
-                          "w-[10px] h-[10px] rounded-sm",
+                          "w-[14px] h-[14px] rounded-sm",
                           getIntensityColor(intensity)
                         )}
                       />

@@ -14,6 +14,7 @@ import { useBadges } from "@/hooks/useBadges";
 import { useRating } from "@/hooks/useRating";
 import { useFirebaseQuiz } from "@/hooks/useFirebaseQuiz";
 import { useAuth } from "@/contexts/AuthContext";
+import { getUserProgress } from "@/lib/userProgressService";
 
 interface QuizStartProps {
   onStart: (quizType: 'topic' | 'subject' | 'full', duration: number, subject?: string, topic?: string) => void;
@@ -47,21 +48,26 @@ export const QuizStart = ({ onStart }: QuizStartProps) => {
     }
   }, [selectedSubject, availableTopics, selectedTopic]);
   
-  // Check if user needs initial test
+  // Check if user needs initial test based on real quiz data
   useEffect(() => {
-    const checkInitialTest = async () => {
-      if (user) {
-        const needs = await checkNeedsInitialTest();
-        setNeedsInitialTest(needs);
-        
-        if (!needs) {
-          const difficulty = await getRecommendedDifficulty();
-          setRecommendedDifficulty(difficulty);
+    if (user) {
+      const progress = getUserProgress(user.id);
+      const hasQuizzes = progress && progress.totalQuizzesTaken > 0;
+      setNeedsInitialTest(!hasQuizzes);
+      
+      // Set recommended difficulty based on rating if user has taken quizzes
+      if (hasQuizzes && progress) {
+        const rating = progress.currentRating;
+        // Calculate difficulty mix based on rating
+        if (rating < 1300) {
+          setRecommendedDifficulty({ easy: 0.6, medium: 0.3, hard: 0.1 });
+        } else if (rating < 1600) {
+          setRecommendedDifficulty({ easy: 0.3, medium: 0.5, hard: 0.2 });
+        } else {
+          setRecommendedDifficulty({ easy: 0.1, medium: 0.3, hard: 0.6 });
         }
       }
-    };
-    
-    checkInitialTest();
+    }
   }, [user]);
 
   const quizTypes = [
@@ -256,7 +262,7 @@ export const QuizStart = ({ onStart }: QuizStartProps) => {
           </Card>
         )}
 
-        {/* Initial Test Info */}
+        {/* Initial Test Info - Only for first-time users */}
         {user && needsInitialTest && (
           <Card className="max-w-2xl mx-auto border-2 border-primary shadow-strong mb-8 bg-primary/5">
             <CardContent className="pt-6">
@@ -265,9 +271,9 @@ export const QuizStart = ({ onStart }: QuizStartProps) => {
                   <AlertCircle className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-primary mb-2">First Time? Take the Initial Quiz!</h4>
+                  <h4 className="font-semibold text-primary mb-2">Welcome! Take Your First Quiz</h4>
                   <p className="text-sm text-muted-foreground">
-                    This will be your first quiz. It contains mixed difficulty questions to assess your level and personalize future quizzes for you.
+                    This is your first quiz. It contains mixed difficulty questions to assess your level and personalize future quizzes for you.
                   </p>
                 </div>
               </div>
@@ -364,7 +370,7 @@ export const QuizStart = ({ onStart }: QuizStartProps) => {
             <div className="text-center space-y-4">
               <Button onClick={handleStart} size="lg" variant="hero" className="w-full">
                 <Brain className="mr-2 h-5 w-5" />
-                {needsInitialTest ? 'Take Initial Quiz' : 'Take Quiz'}
+                {needsInitialTest ? 'Start First Quiz' : 'Start Quiz'}
               </Button>
               
               <Link to="/gate">

@@ -1,4 +1,13 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
+import {
+  getUserProgress,
+  initializeUserProgress,
+  updateActiveDays,
+  recordQuizAttempt,
+  getDifficultyForRating,
+  calculateRatingChange,
+} from '@/lib/userProgressService';
 
 interface QuizAnswer {
   questionId: number;
@@ -51,8 +60,22 @@ interface QuizContextType {
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
 
 export const QuizProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
   const [quizState, setQuizState] = useState<QuizState | null>(null);
   const [questionViewTs, setQuestionViewTs] = useState<number | null>(null);
+  const [quizStartTime, setQuizStartTime] = useState<number | null>(null);
+
+  // Initialize or update user progress when user logs in
+  useEffect(() => {
+    if (user) {
+      let progress = getUserProgress(user.id);
+      if (!progress) {
+        progress = initializeUserProgress(user.id, user.name, user.email);
+      } else {
+        updateActiveDays(user.id);
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     if (quizState && !quizState.isCompleted) {
@@ -94,6 +117,7 @@ export const QuizProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const startQuizWithQuestions = ({ examName, quizType, questions, durationMin, mode = 'standard', subject }: { examName: string; quizType: 'topic' | 'subject' | 'full'; questions: QuizQuestion[]; durationMin: number; mode?: 'standard' | 'calibration' | 'adaptive'; subject?: string; }) => {
+    setQuizStartTime(Date.now());
     const newState: QuizState = {
       examName,
       quizType,
@@ -125,9 +149,14 @@ export const QuizProvider = ({ children }: { children: ReactNode }) => {
         timeTakenSec = Math.max(1, Math.round((Date.now() - questionViewTs) / 1000));
       }
       
+      // Check if answer is correct
+      const question = prev.questions[questionId];
+      const isCorrect = question ? question.correctAnswer === answerIndex : false;
+      
       newAnswers[questionId] = { 
         ...newAnswers[questionId], 
-        selectedAnswer: answerIndex, 
+        selectedAnswer: answerIndex,
+        isCorrect,
         timeTakenSec 
       };
       
@@ -221,6 +250,36 @@ export const QuizProvider = ({ children }: { children: ReactNode }) => {
       }
       
       const newState = { ...prev, answers: newAnswers, isCompleted: true };
+      
+      // Record quiz attempt if user is logged in
+      if (user && quizStartTime) {
+        const questionsAttempted = newAnswers.filter(a => a.selectedAnswer !== null).length;
+        const correctAnswers = newAnswers.filter(a => a.isCorrect).length;
+        const timeTaken = Math.round((Date.now() - quizStartTime) / 1000);
+        
+        // Get current rating
+        const progress = getUserProgress(user.id);
+        const currentRating = progress?.currentRating || 1200;
+        
+        // Calculate score and rating change
+        const score = questionsAttempted > 0 ? (correctAnswers / questionsAttempted) * 100 : 0;
+        const difficulty = getDifficultyForRating(currentRating);
+        const ratingChange = calculateRatingChange(currentRating, score, difficulty);
+        const newRating = Math.max(800, Math.min(2400, currentRating + ratingChange));
+        
+        // Record the attempt
+        recordQuizAttempt(
+          user.id,
+          prev.examName,
+          questionsAttempted,
+          correctAnswers,
+          currentRating,
+          newRating,
+          difficulty,
+          timeTaken
+        );
+      }
+      
       localStorage.setItem(`quiz_${prev.examName}_${prev.quizType}_completed`, JSON.stringify(newState));
       localStorage.removeItem(`quiz_${prev.examName}_${prev.quizType}`);
       return newState;

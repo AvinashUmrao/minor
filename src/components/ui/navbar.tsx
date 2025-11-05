@@ -1,21 +1,26 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, BookOpen, Users, Award, Shield } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, isTeacher } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const navigation = [
+  // Filter navigation based on user role
+  const allNavigation = [
     { name: "Home", href: "/", icon: BookOpen },
-    { name: "Exam Prep", href: "/exam-prep", icon: Award },
+    { name: "Exam Prep", href: "/exam-prep", icon: Award, hideForTeacher: true },
     { name: "Blogs", href: "/blogs", icon: Users },
     { name: "Plagiarism Check", href: "/plagiarism", icon: Shield },
   ];
+
+  // Filter out items that should be hidden for teachers
+  const navigation = allNavigation.filter(item => !(isTeacher && item.hideForTeacher));
 
   const userNavigation = [
     { name: "Dashboard", href: "/progress", icon: Award },
@@ -27,6 +32,7 @@ const Navbar = () => {
     try {
       await logout();
       setIsOpen(false);
+      navigate('/auth'); // Redirect to login page
     } catch (err) {
       console.error("Logout failed:", err);
     }
@@ -67,8 +73,8 @@ const Navbar = () => {
               );
             })}
 
-            {/* User Dashboard - Only for logged-in users */}
-            {user && userNavigation.map((item) => {
+            {/* User Dashboard - Only for logged-in students (not teachers) */}
+            {user && !isTeacher && userNavigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
               return (
@@ -145,8 +151,8 @@ const Navbar = () => {
               );
             })}
 
-            {/* User Dashboard - Mobile */}
-            {user && userNavigation.map((item) => {
+            {/* User Dashboard - Mobile (Only for students, not teachers) */}
+            {user && !isTeacher && userNavigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
               return (

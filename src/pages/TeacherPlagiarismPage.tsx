@@ -197,7 +197,8 @@ const TeacherPlagiarismPage = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="font-semibold">{submission.studentName}</span>
-                          {submission.plagiarismScore !== undefined && (
+                          {/* Only show similarity score for text/essay assignments, not code */}
+                          {submission.plagiarismScore !== undefined && selectedAssignment?.type !== 'code' && (
                             <Badge
                               variant={submission.plagiarismScore >= 0.6 ? 'destructive' : 'secondary'}
                             >

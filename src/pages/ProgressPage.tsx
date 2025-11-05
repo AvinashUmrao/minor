@@ -3,67 +3,148 @@ import { Badge } from "@/components/ui/badge";
 import { BadgeGrid } from "@/components/gamification/BadgeGrid";
 import { StreakCalendar } from "@/components/gamification/StreakCalendar";
 import { RatingGuide } from "@/components/gamification/RatingGuide";
-import { Leaderboard } from "@/components/leaderboard/Leaderboard";
+import { DynamicLeaderboard } from "@/components/leaderboard/DynamicLeaderboard";
 import { useBadges } from "@/hooks/useBadges";
 import { useStreak } from "@/hooks/useStreak";
 import { useRating } from "@/hooks/useRating";
-import { Trophy, Flame, TrendingUp, Download, User, Target, Calendar } from "lucide-react";
+import { Trophy, Flame, TrendingUp, Download, User, Target, Calendar, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { generateProgressReportPDF } from "@/lib/progressPdfGenerator";
-import { initializeSampleActivityData } from "@/lib/streakUtils";
-import { useFirebaseQuiz } from "@/hooks/useFirebaseQuiz";
+import { getUserProgress, getActivityCalendar } from "@/lib/userProgressService";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserProgress } from "@/types/userProgress";
 
 const ProgressPage = () => {
   const { user } = useAuth();
-  const { allBadges, stats: badgeStats, isLoading: badgesLoading } = useBadges();
-  const { streak, stats: streakStats, calendarData, isLoading: streakLoading, refreshStreak } = useStreak();
-  const { rating, breakdown, milestones, tips, isLoading: ratingLoading } = useRating();
-  const { userProfile, quizHistory, loading: firebaseLoading } = useFirebaseQuiz();
+  
+  // Safely load hooks with fallbacks
+  let allBadges: any[] = [];
+  let badgeStats = { total: 0, earned: 0, locked: 0, inProgress: 0 };
+  let streak = { currentStreak: 0, longestStreak: 0 };
+  let rating = { current: 1200, subjectRatings: [] };
+  let breakdown: any = {};
+  let milestones: any[] = [];
+  let tips: any[] = [];
+  
+  try {
+    const badgesData = useBadges();
+    allBadges = badgesData?.allBadges || [];
+    badgeStats = badgesData?.stats || badgeStats;
+  } catch (e) {
+    console.warn('Badges hook failed:', e);
+  }
+  
+  try {
+    const streakData = useStreak();
+    streak = streakData?.streak || streak;
+  } catch (e) {
+    console.warn('Streak hook failed:', e);
+  }
+  
+  try {
+    const ratingData = useRating();
+    rating = ratingData?.rating || rating;
+    breakdown = ratingData?.breakdown || breakdown;
+    milestones = ratingData?.milestones || [];
+    tips = ratingData?.tips || [];
+  } catch (e) {
+    console.warn('Rating hook failed:', e);
+  }
+  
+  const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
+  const [realCalendarData, setRealCalendarData] = useState<any[]>([]);
 
-  const isLoading = badgesLoading || streakLoading || ratingLoading || firebaseLoading;
+  const isLoading = false;
 
-  // Initialize sample data if no activity exists
+  // Load user progress and activity calendar
   useEffect(() => {
-    if (!streakLoading && calendarData.length > 0) {
-      const hasAnyActivity = calendarData.some(day => day.activityCount > 0);
-      if (!hasAnyActivity) {
-        initializeSampleActivityData();
-        refreshStreak();
-      }
+    if (user) {
+      loadUserData();
     }
-  }, [streakLoading, calendarData, refreshStreak]);
+  }, [user]);
+
+  const loadUserData = () => {
+    if (!user) return;
+    
+    const progress = getUserProgress(user.id);
+    setUserProgress(progress);
+    
+    // Get real activity calendar data
+    const activityData = getActivityCalendar(user.id);
+    setRealCalendarData(activityData);
+  };
+
+  // Refresh data every 5 seconds to catch quiz updates
+  useEffect(() => {
+    if (!user) return;
+    
+    const interval = setInterval(() => {
+      loadUserData();
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
 
   const handleDownloadPDF = () => {
     try {
+      if (!userProgress) {
+        alert('Please take a quiz first to generate your report!');
+        return;
+      }
+      
       generateProgressReportPDF({
         badges: allBadges,
         badgeStats,
         streak,
-        streakStats,
-        calendarData,
+        streakStats: {
+          currentStreak: userProgress.currentStreak,
+          longestStreak: userProgress.longestStreak,
+          totalActiveDays: userProgress.activeDays,
+          thisMonthActiveDays: 0,
+          averageActivitiesPerDay: 0,
+        },
+        calendarData: realCalendarData,
         rating,
         breakdown,
         milestones,
         tips,
-        // Pass Firebase user profile data for accurate rating
-        userProfile: userProfile ? {
-          currentRating: userProfile.currentRating,
-          peakRating: userProfile.peakRating,
-          currentCategory: userProfile.currentCategory,
-          totalQuizzes: userProfile.totalQuizzes,
-          totalQuestionsAttempted: userProfile.totalQuestionsAttempted,
-          totalCorrectAnswers: userProfile.totalCorrectAnswers,
-          overallAccuracy: userProfile.overallAccuracy,
-        } : undefined
+        userProfile: {
+          currentRating: userProgress.currentRating,
+          peakRating: userProgress.highestRating,
+          currentCategory: 'good',
+          totalQuizzes: userProgress.totalQuizzesTaken,
+          totalQuestionsAttempted: userProgress.totalQuestionsAttempted,
+          totalCorrectAnswers: userProgress.correctAnswers,
+          overallAccuracy: userProgress.totalQuestionsAttempted > 0 
+            ? (userProgress.correctAnswers / userProgress.totalQuestionsAttempted) * 100 
+            : 0,
+        }
       });
     } catch (error) {
       console.error('Failed to generate PDF:', error);
       alert('Failed to generate PDF report. Please try again.');
     }
   };
+
+  // Show message if user is not logged in
+  if (!user) {
+    return (
+      <div className="container mx-auto py-12 px-4 pt-24">
+        <Card className="p-12 text-center">
+          <User className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Login Required</h2>
+          <p className="text-muted-foreground mb-6">
+            Please log in to view your progress dashboard
+          </p>
+          <Button onClick={() => window.location.href = '/auth'}>
+            Go to Login
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -95,8 +176,8 @@ const ProgressPage = () => {
         </Button>
       </div>
 
-      {/* Overall Performance Card - Firebase Data */}
-      {user && userProfile && (
+      {/* Overall Performance Card - Real User Data */}
+      {user && userProgress && (
         <Card className="mb-8 border-2 border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -108,23 +189,25 @@ const ProgressPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="text-center p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg">
                 <TrendingUp className="w-8 h-8 mx-auto mb-2 text-primary" />
-                <div className="text-3xl font-bold text-primary">{userProfile.currentRating}</div>
+                <div className="text-3xl font-bold text-primary">{userProgress.currentRating}</div>
                 <div className="text-sm text-muted-foreground mt-1">Current Rating</div>
-                <div className="text-xs text-muted-foreground">Peak: {userProfile.peakRating}</div>
+                <div className="text-xs text-muted-foreground">Peak: {userProgress.highestRating}</div>
               </div>
               <div className="text-center p-4 bg-gradient-to-br from-accent/30 to-accent/10 rounded-lg">
-                <Target className="w-8 h-8 mx-auto mb-2 text-primary" />
-                <Badge variant={userProfile.currentCategory === 'good' ? 'default' : userProfile.currentCategory === 'average' ? 'secondary' : 'destructive'} className="text-lg px-4 py-1">
-                  {userProfile.currentCategory.toUpperCase()}
-                </Badge>
-                <div className="text-sm text-muted-foreground mt-2">Category</div>
+                <Calendar className="w-8 h-8 mx-auto mb-2 text-primary" />
+                <div className="text-3xl font-bold">{userProgress.activeDays}</div>
+                <div className="text-sm text-muted-foreground mt-1">Active Days</div>
               </div>
               <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 rounded-lg">
-                <div className="text-3xl font-bold text-green-600">{userProfile.overallAccuracy.toFixed(1)}%</div>
+                <div className="text-3xl font-bold text-green-600">
+                  {userProgress.totalQuestionsAttempted > 0 
+                    ? ((userProgress.correctAnswers / userProgress.totalQuestionsAttempted) * 100).toFixed(1)
+                    : 0}%
+                </div>
                 <div className="text-sm text-muted-foreground mt-1">Accuracy</div>
               </div>
               <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 rounded-lg">
-                <div className="text-3xl font-bold text-blue-600">{userProfile.totalQuizzes}</div>
+                <div className="text-3xl font-bold text-blue-600">{userProgress.totalQuizzesTaken}</div>
                 <div className="text-sm text-muted-foreground mt-1">Quizzes Taken</div>
               </div>
             </div>
@@ -132,15 +215,27 @@ const ProgressPage = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6 pt-6 border-t">
               <div>
                 <div className="text-sm text-muted-foreground">Questions Attempted</div>
-                <div className="text-2xl font-bold">{userProfile.totalQuestionsAttempted}</div>
+                <div className="text-2xl font-bold">{userProgress.totalQuestionsAttempted}</div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Correct Answers</div>
-                <div className="text-2xl font-bold text-green-600">{userProfile.totalCorrectAnswers}</div>
+                <div className="text-2xl font-bold text-green-600">{userProgress.correctAnswers}</div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Member Since</div>
-                <div className="text-sm font-medium">{new Date(userProfile.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString()}</div>
+                <div className="text-sm text-muted-foreground">Current Streak</div>
+                <div className="text-2xl font-bold text-orange-600">{userProgress.currentStreak} 🔥</div>
+              </div>
+            </div>
+            
+            {/* Badges Display */}
+            <div className="mt-6 pt-6 border-t">
+              <div className="text-sm text-muted-foreground mb-3">Your Badges</div>
+              <div className="flex flex-wrap gap-2">
+                {userProgress.badges.map((badge, index) => (
+                  <Badge key={index} variant="secondary" className="text-base px-3 py-1">
+                    {badge}
+                  </Badge>
+                ))}
               </div>
             </div>
           </CardContent>
@@ -163,7 +258,7 @@ const ProgressPage = () => {
           <div className="flex items-center gap-3">
             <Flame className="w-8 h-8 text-orange-600" />
             <div>
-              <div className="text-2xl font-bold">{streak.currentStreak}</div>
+              <div className="text-2xl font-bold">{userProgress?.currentStreak || 0}</div>
               <div className="text-sm text-muted-foreground">Day Streak</div>
             </div>
           </div>
@@ -173,7 +268,7 @@ const ProgressPage = () => {
           <div className="flex items-center gap-3">
             <Calendar className="w-8 h-8 text-green-600" />
             <div>
-              <div className="text-2xl font-bold">{streakStats.totalActiveDays}</div>
+              <div className="text-2xl font-bold">{userProgress?.activeDays || 0}</div>
               <div className="text-sm text-muted-foreground">Active Days</div>
             </div>
           </div>
@@ -210,10 +305,10 @@ const ProgressPage = () => {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid md:grid-cols-1 gap-6">
             <StreakCalendar
-              calendarData={calendarData}
-              currentStreak={streak.currentStreak}
-              longestStreak={streak.longestStreak}
-              totalActiveDays={streakStats.totalActiveDays}
+              calendarData={realCalendarData}
+              currentStreak={userProgress?.currentStreak || 0}
+              longestStreak={userProgress?.longestStreak || 0}
+              totalActiveDays={userProgress?.activeDays || 0}
             />
           </div>
         </TabsContent>
@@ -226,10 +321,10 @@ const ProgressPage = () => {
         {/* Streak Tab */}
         <TabsContent value="streak">
           <StreakCalendar
-            calendarData={calendarData}
-            currentStreak={streak.currentStreak}
-            longestStreak={streak.longestStreak}
-            totalActiveDays={streakStats.totalActiveDays}
+            calendarData={realCalendarData}
+            currentStreak={userProgress?.currentStreak || 0}
+            longestStreak={userProgress?.longestStreak || 0}
+            totalActiveDays={userProgress?.activeDays || 0}
           />
         </TabsContent>
 
@@ -244,7 +339,7 @@ const ProgressPage = () => {
 
         {/* Leaderboard Tab */}
         <TabsContent value="leaderboard">
-          <Leaderboard />
+          <DynamicLeaderboard />
         </TabsContent>
       </Tabs>
     </div>

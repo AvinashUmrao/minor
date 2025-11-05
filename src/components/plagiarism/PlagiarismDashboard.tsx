@@ -97,43 +97,18 @@ export const PlagiarismDashboard = ({ matches, onViewMatch }: PlagiarismDashboar
                     </div>
 
                     <div className="space-y-2">
+                      {/* Overall Similarity Score */}
                       <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground w-32">Overall Score:</span>
+                        <span className="text-sm text-muted-foreground w-32">Similarity Score:</span>
                         <Progress value={match.overallScore * 100} className="flex-1" />
                         <Badge className={getSeverityColor(match.overallScore)}>
-                          {(match.overallScore * 100).toFixed(1)}% - {getSeverityLabel(match.overallScore)}
+                          {(match.overallScore * 100).toFixed(1)}%
                         </Badge>
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Jaccard:</span>
-                          <span className="font-medium">{(match.algorithms.jaccard * 100).toFixed(1)}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Cosine:</span>
-                          <span className="font-medium">{(match.algorithms.cosine * 100).toFixed(1)}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">TF-IDF:</span>
-                          <span className="font-medium">{(match.algorithms.tfidf * 100).toFixed(1)}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">LCS:</span>
-                          <span className="font-medium">{(match.algorithms.lcs * 100).toFixed(1)}%</span>
-                        </div>
-                        {match.algorithms.winnowing !== undefined && (
-                          <>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">AST:</span>
-                              <span className="font-medium">{(match.algorithms.ast! * 100).toFixed(1)}%</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Winnowing:</span>
-                              <span className="font-medium">{(match.algorithms.winnowing * 100).toFixed(1)}%</span>
-                            </div>
-                          </>
-                        )}
+                      {/* Show matched segments count */}
+                      <div className="text-sm text-muted-foreground">
+                        {match.matchedSegments.length} similar segment{match.matchedSegments.length !== 1 ? 's' : ''} found
                       </div>
                     </div>
                   </div>

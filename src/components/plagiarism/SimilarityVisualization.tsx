@@ -22,46 +22,116 @@ export const SimilarityVisualization = ({
   if (!match || !submission1 || !submission2) return null;
 
   const highlightMatches = (text: string, segments: typeof match.matchedSegments, isFirst: boolean) => {
-    if (segments.length === 0) return text;
+    if (segments.length === 0 || !text) return text;
 
-    const words = text.split(' ');
-    const highlighted: JSX.Element[] = [];
-    let currentIndex = 0;
-
-    segments.forEach((segment, segIndex) => {
-      const startIdx = isFirst ? segment.startIndex1 : segment.startIndex2;
-      const endIdx = isFirst ? segment.endIndex1 : segment.endIndex2;
-
-      // Add non-highlighted words before this segment
-      for (let i = currentIndex; i < startIdx; i++) {
-        highlighted.push(
-          <span key={`normal-${i}`}>{words[i]} </span>
-        );
-      }
-
-      // Add highlighted segment
-      for (let i = startIdx; i < endIdx; i++) {
-        highlighted.push(
-          <mark
-            key={`highlight-${segIndex}-${i}`}
-            className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded"
-          >
-            {words[i]}{' '}
-          </mark>
-        );
-      }
-
-      currentIndex = endIdx;
+    // Split text into lines
+    const lines = text.split('\n');
+    
+    // Create a set of line indices that contain plagiarized content
+    const plagiarizedLines = new Set<number>();
+    
+    segments.forEach((segment) => {
+      const matchedText = isFirst ? segment.text1 : segment.text2;
+      
+      // Skip empty matches
+      if (!matchedText) return;
+      
+      const trimmedMatch = matchedText.trim();
+      if (trimmedMatch.length === 0) return;
+      
+      // Split matched text into lines to handle multi-line matches
+      const matchLines = matchedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      
+      // Find which lines in the code contain any part of the matched text
+      lines.forEach((line, lineIndex) => {
+        const trimmedLine = line.trim();
+        
+        if (trimmedLine.length === 0) return;
+        
+        // Check if this line matches any of the matched segment lines
+        const hasMatch = matchLines.some(matchLine => {
+          // Exact match
+          if (trimmedLine === matchLine) return true;
+          
+          // Line contains the match
+          if (trimmedLine.includes(matchLine)) return true;
+          
+          // Match contains the line
+          if (matchLine.includes(trimmedLine)) return true;
+          
+          // Check for high similarity (70% or more)
+          if (trimmedLine.length > 3 && matchLine.length > 3) {
+            const similarity = calculateLineSimilarity(trimmedLine, matchLine);
+            return similarity >= 0.7;
+          }
+          
+          return false;
+        });
+        
+        if (hasMatch) {
+          plagiarizedLines.add(lineIndex);
+        }
+      });
     });
 
-    // Add remaining non-highlighted words
-    for (let i = currentIndex; i < words.length; i++) {
-      highlighted.push(
-        <span key={`normal-${i}`}>{words[i]} </span>
-      );
+    // Render lines with highlighting
+    return (
+      <>
+        {lines.map((line, lineIndex) => {
+          const isPlagiarized = plagiarizedLines.has(lineIndex);
+          
+          return (
+            <div
+              key={lineIndex}
+              className={isPlagiarized ? 'bg-yellow-200 dark:bg-yellow-900/50 -mx-4 px-4 border-l-4 border-yellow-500' : ''}
+            >
+              {line}
+              {lineIndex < lines.length - 1 && '\n'}
+            </div>
+          );
+        })}
+      </>
+    );
+  };
+
+  // Helper function to calculate similarity between two strings
+  const calculateLineSimilarity = (str1: string, str2: string): number => {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) return 1.0;
+    
+    const editDistance = levenshteinDistance(longer, shorter);
+    return (longer.length - editDistance) / longer.length;
+  };
+
+  // Levenshtein distance calculation
+  const levenshteinDistance = (str1: string, str2: string): number => {
+    const matrix: number[][] = [];
+
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
     }
 
-    return <>{highlighted}</>;
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+
+    return matrix[str2.length][str1.length];
   };
 
   return (
