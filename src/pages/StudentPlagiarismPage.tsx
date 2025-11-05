@@ -7,11 +7,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AssignmentCard } from '@/components/plagiarism/AssignmentCard';
 import { SubmissionForm } from '@/components/plagiarism/SubmissionForm';
 import { Assignment } from '@/types/plagiarism';
-import { getAssignments, getSubmission, getCurrentUser, setCurrentUser } from '@/lib/plagiarismStorage';
-import { FileText, ArrowLeft, CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { getAssignments, getSubmission } from '@/lib/plagiarismStorage';
+import { FileText, ArrowLeft, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const StudentPlagiarismPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [showSubmissionDialog, setShowSubmissionDialog] = useState(false);
@@ -37,10 +39,9 @@ const StudentPlagiarismPage = () => {
   };
 
   const getSubmissionStatus = (assignment: Assignment) => {
-    const currentUser = getCurrentUser();
-    if (!currentUser) return null;
+    if (!user) return null;
 
-    const submission = getSubmission(assignment.id, currentUser.userId);
+    const submission = getSubmission(assignment.id, user.id);
     const dueDate = new Date(assignment.dueDate);
     const now = new Date();
     const isOverdue = dueDate < now;
@@ -84,27 +85,12 @@ const StudentPlagiarismPage = () => {
     }),
   };
 
-  const handleSwitchRole = () => {
-    // Directly switch to teacher role without confirmation
-    setCurrentUser('teacher1', 'Dr. Sarah Johnson', 'teacher');
-    navigate('/plagiarism', { replace: true });
-    window.location.reload(); // Force reload to show teacher view
-  };
 
   return (
     <div className="container mx-auto pt-24 pb-12 px-4">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
           <Badge variant="outline">Student Dashboard</Badge>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSwitchRole}
-            className="gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Switch to Teacher
-          </Button>
         </div>
         <h1 className="text-4xl font-bold mb-2">My Assignments</h1>
         <p className="text-muted-foreground text-lg">
@@ -266,8 +252,8 @@ const StudentPlagiarismPage = () => {
                 <SubmissionForm
                   assignment={selectedAssignment}
                   existingSubmission={
-                    getCurrentUser()
-                      ? getSubmission(selectedAssignment.id, getCurrentUser()!.userId)
+                    user
+                      ? getSubmission(selectedAssignment.id, user.id)
                       : null
                   }
                   onSubmitted={handleSubmissionComplete}

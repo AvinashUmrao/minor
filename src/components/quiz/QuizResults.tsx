@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { RotateCcw, ArrowLeft, Award, TrendingUp, Target, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { useQuiz } from "@/contexts/QuizContext";
 import { analyzePerformance, topicStrengths, calibrationAssignment, getCategory, getRating } from "@/lib/adaptive";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { useToast } from "@/hooks/use-toast";
 
 interface Answer {
   questionId: number;
@@ -22,7 +24,9 @@ interface QuizResultsProps {
 
 export const QuizResults = ({ answers, onRestart }: QuizResultsProps) => {
   const { quizState } = useQuiz();
+  const { toast } = useToast();
   const questions = quizState?.questions || [];
+  const [previousRating] = useState(() => getRating('gate', quizState?.subject));
   
   if (!questions.length) {
     return <div className="min-h-screen bg-background pt-20 flex items-center justify-center">
@@ -67,6 +71,20 @@ export const QuizResults = ({ answers, onRestart }: QuizResultsProps) => {
   const assignedCategory = isCalibration ? calibrationAssignment(results.correct) : null;
   const currentCategory = getCategory('gate', quizState?.subject);
   const currentRating = getRating('gate', quizState?.subject);
+
+  // Show rating change notification
+  useEffect(() => {
+    if (!isCalibration && currentRating !== previousRating) {
+      const ratingChange = currentRating - previousRating;
+      const changeText = ratingChange > 0 ? `+${ratingChange}` : `${ratingChange}`;
+      
+      toast({
+        title: "Rating Updated! 📊",
+        description: `Your rating changed from ${previousRating} to ${currentRating} (${changeText})`,
+        duration: 3000,
+      });
+    }
+  }, [currentRating, previousRating, isCalibration, toast]);
   
   const getCategoryColor = (cat: string) => {
     if (cat === 'Best') return 'bg-success/10 text-success border-success';
@@ -361,9 +379,6 @@ export const QuizResults = ({ answers, onRestart }: QuizResultsProps) => {
                     {results.perf.accuracyByDifficulty.Medium.total > 0 && ` • Medium (${Math.round((results.perf.accuracyByDifficulty.Medium.correct / results.perf.accuracyByDifficulty.Medium.total) * 100)}%)`}
                     {results.perf.accuracyByDifficulty.Hard.total > 0 && ` • Hard (${Math.round((results.perf.accuracyByDifficulty.Hard.correct / results.perf.accuracyByDifficulty.Hard.total) * 100)}%)`}
                   </p>
-                  {!isCalibration && (
-                    <p><strong>Rating Change:</strong> Your rating is now <span className="font-bold">{currentRating}</span> (Category: {currentCategory})</p>
-                  )}
                 </div>
               </div>
             </div>

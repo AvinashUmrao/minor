@@ -24,6 +24,16 @@ interface ProgressReportData {
   breakdown: RatingBreakdown;
   milestones: RatingMilestone[];
   tips: string[];
+  // Firebase user profile data (overrides rating if provided)
+  userProfile?: {
+    currentRating: number;
+    peakRating: number;
+    currentCategory: string;
+    totalQuizzes: number;
+    totalQuestionsAttempted: number;
+    totalCorrectAnswers: number;
+    overallAccuracy: number;
+  };
 }
 
 // Generate dummy 1-week data for demonstration
@@ -53,6 +63,12 @@ export const generateProgressReportPDF = (data: ProgressReportData) => {
   const doc = new jsPDF();
   let yPos = 20;
   
+  // Use Firebase data if available, otherwise fall back to localStorage rating
+  const currentRating = data.userProfile?.currentRating ?? data.rating.current;
+  const peakRating = data.userProfile?.peakRating ?? data.rating.peak;
+  const userTotalQuizzes = data.userProfile?.totalQuizzes ?? 0;
+  const userAccuracy = data.userProfile?.overallAccuracy ?? 0;
+  
   // Header
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
@@ -69,7 +85,7 @@ export const generateProgressReportPDF = (data: ProgressReportData) => {
   const stats = [
     { label: 'Badges Earned', value: data.badgeStats.earned.toString(), color: [255, 193, 7] },
     { label: 'Current Streak', value: `${data.streak.currentStreak} days`, color: [255, 87, 34] },
-    { label: 'Current Rating', value: data.rating.current.toString(), color: [33, 150, 243] },
+    { label: 'Current Rating', value: currentRating.toString(), color: [33, 150, 243] },
     { label: 'Active Days', value: data.streakStats.totalActiveDays.toString(), color: [76, 175, 80] },
   ];
   
@@ -231,14 +247,30 @@ export const generateProgressReportPDF = (data: ProgressReportData) => {
   
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Current Rating: ${data.rating.current}`, 20, yPos);
+  doc.text(`Current Rating: ${currentRating}`, 20, yPos);
   yPos += 7;
-  doc.text(`Peak Rating: ${data.rating.peak}`, 20, yPos);
+  doc.text(`Peak Rating: ${peakRating}`, 20, yPos);
   yPos += 7;
-  doc.text(`Percentile: Top ${data.rating.percentile}%`, 20, yPos);
-  yPos += 7;
-  doc.text(`Trend: ${data.rating.trend.charAt(0).toUpperCase() + data.rating.trend.slice(1)}`, 20, yPos);
-  yPos += 12;
+  
+  // Show Firebase stats if available
+  if (data.userProfile) {
+    doc.text(`Category: ${data.userProfile.currentCategory.toUpperCase()}`, 20, yPos);
+    yPos += 7;
+    doc.text(`Accuracy: ${userAccuracy.toFixed(1)}%`, 20, yPos);
+    yPos += 7;
+    doc.text(`Total Quizzes: ${userTotalQuizzes}`, 20, yPos);
+    yPos += 7;
+    doc.text(`Questions Attempted: ${data.userProfile.totalQuestionsAttempted}`, 20, yPos);
+    yPos += 7;
+    doc.text(`Correct Answers: ${data.userProfile.totalCorrectAnswers}`, 20, yPos);
+    yPos += 7;
+  } else {
+    doc.text(`Percentile: Top ${data.rating.percentile}%`, 20, yPos);
+    yPos += 7;
+    doc.text(`Trend: ${data.rating.trend.charAt(0).toUpperCase() + data.rating.trend.slice(1)}`, 20, yPos);
+    yPos += 7;
+  }
+  yPos += 5;
   
   // Rating Breakdown
   doc.setFontSize(14);

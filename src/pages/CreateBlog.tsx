@@ -1,4 +1,4 @@
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, useEffect, FormEvent, ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Upload, Loader2, Eye } from "lucide-react";
+import { ArrowLeft, Upload, Loader2, Eye, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   generateBlogId,
   generateSlug,
@@ -28,19 +30,27 @@ import { BLOG_CATEGORIES } from "@/types/blog";
 export default function CreateBlog() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [showPreview, setShowPreview] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
-    author: "",
+    author: user?.name || "",
     category: "",
     content: "",
     excerpt: "",
     readTime: "",
     imageFile: null as File | null,
   });
+
+  // Update author name when user changes
+  useEffect(() => {
+    if (user?.name) {
+      setFormData(prev => ({ ...prev, author: user.name }));
+    }
+  }, [user]);
 
   // Check localStorage availability on mount
   useState(() => {
@@ -173,11 +183,13 @@ export default function CreateBlog() {
       // Convert image to Base64
       const imageBase64 = await fileToBase64(formData.imageFile!);
 
-      // Create blog object
+      // Create blog object with author info
       const newBlog = {
         id: generateBlogId(),
         title: formData.title.trim(),
-        author: formData.author.trim(),
+        author: user?.name || formData.author.trim(),
+        authorId: user?.id,
+        authorEmail: user?.email,
         category: formData.category,
         content: formData.content.trim(),
         excerpt: formData.excerpt.trim(),
@@ -267,6 +279,25 @@ export default function CreateBlog() {
         </p>
       </div>
 
+      {/* Authentication Check */}
+      {!isAuthenticated && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Authentication Required</AlertTitle>
+          <AlertDescription>
+            You must be logged in to create a blog post. Please{" "}
+            <Button
+              variant="link"
+              className="p-0 h-auto font-semibold"
+              onClick={() => navigate("/login")}
+            >
+              log in
+            </Button>{" "}
+            to continue.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
@@ -299,8 +330,16 @@ export default function CreateBlog() {
                 placeholder="Your name..."
                 value={formData.author}
                 onChange={handleInputChange}
+                disabled={isAuthenticated}
+                readOnly={isAuthenticated}
                 required
+                className={isAuthenticated ? "bg-muted cursor-not-allowed" : ""}
               />
+              {isAuthenticated && (
+                <p className="text-xs text-muted-foreground">
+                  Author name is automatically set from your account
+                </p>
+              )}
             </div>
 
             {/* Category */}
@@ -415,7 +454,7 @@ export default function CreateBlog() {
             <div className="flex gap-4 pt-4">
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isAuthenticated}
                 className="flex-1"
               >
                 {isSubmitting ? (
@@ -423,6 +462,8 @@ export default function CreateBlog() {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Publishing...
                   </>
+                ) : !isAuthenticated ? (
+                  "Login Required to Publish"
                 ) : (
                   "Publish Blog"
                 )}

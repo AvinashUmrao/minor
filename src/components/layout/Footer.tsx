@@ -40,7 +40,6 @@ export const Footer = () => {
               <li><Link to="/" className="text-muted-foreground hover:text-primary transition-colors">Home</Link></li>
               <li><Link to="/exam-prep" className="text-muted-foreground hover:text-primary transition-colors">Exam Preparation</Link></li>
               <li><Link to="/blogs" className="text-muted-foreground hover:text-primary transition-colors">Blogs</Link></li>
-              <li><Link to="/plague-check" className="text-muted-foreground hover:text-primary transition-colors">Plague Check</Link></li>
             </ul>
           </div>
 

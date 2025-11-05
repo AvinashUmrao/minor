@@ -12,11 +12,17 @@ import { checkAndAwardBadges as checkNewBadges } from "@/lib/badgeUtils";
 import { updateRatingAfterQuiz } from "@/lib/ratingUtils";
 import { getUserStreak } from "@/lib/streakUtils";
 import { getUserRating } from "@/lib/ratingUtils";
+import { useFirebaseQuiz } from "@/hooks/useFirebaseQuiz";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 type QuizStage = 'start' | 'taking' | 'results';
 
 const GateQuiz = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const { quizState, startQuiz, startQuizWithQuestions, selectAnswer, nextQuestion, previousQuestion, submitQuiz, resetQuiz } = useQuiz();
+  const { saveQuizResult, getRecommendedDifficulty } = useFirebaseQuiz();
 
   const stage: QuizStage = !quizState ? 'start' : quizState.isCompleted ? 'results' : 'taking';
 
@@ -26,6 +32,7 @@ const GateQuiz = () => {
       const perf = analyzePerformance(questionsAny, quizState.answers.map(a => ({ selectedAnswer: a.selectedAnswer, timeTakenSec: a.timeTakenSec })));
       const subject = quizState.subject;
       
+      // Handle calibration vs adaptive mode
       if (quizState.mode === 'calibration') {
         const cat = calibrationAssignment(perf.correct);
         const initialMap: Record<string, number> = { Low: 100, Medium: 300, Best: 600 };
@@ -40,7 +47,7 @@ const GateQuiz = () => {
         localStorage.setItem(catKey, getCategory('gate', subject));
       }
       
-      // Gamification: Track quiz attempt
+      // Gamification: Track quiz attempt (OLD system)
       const totalTime = quizState.answers.reduce((sum, a) => sum + (a.timeTakenSec || 0), 0);
       const quizAttempt = addQuizAttempt({
         subject: subject || 'general',
@@ -60,11 +67,6 @@ const GateQuiz = () => {
       // Check and award badges (OLD system)
       const quizHistory = getQuizHistory();
       const newBadges = checkAndAwardBadges(quizAttempt, streakData, quizHistory);
-      
-      // Show badge notification if any earned
-      if (newBadges.length > 0) {
-        console.log('New badges earned:', newBadges);
-      }
       
       // UPDATE NEW GAMIFICATION SYSTEM
       // Record activity in new streak system
@@ -89,10 +91,55 @@ const GateQuiz = () => {
         streak: newStreak,
         rating: newRating
       });
+      
+      // SAVE TO FIREBASE if user is authenticated
+      if (user) {
+        const saveToFirebase = async () => {
+          try {
+            const difficultyLevel = quizState.mode === 'calibration' ? 'mixed' : 
+              (perf.correct / perf.total) >= 0.8 ? 'hard' : 
+              (perf.correct / perf.total) >= 0.5 ? 'medium' : 'easy';
+            
+            const result = await saveQuizResult({
+              examType: 'gate',
+              subject: subject || 'general',
+              quizType: quizState.quizType,
+              score: perf.correct,
+              totalQuestions: perf.total,
+              difficulty: difficultyLevel as any,
+              timeTaken: totalTime,
+              answers: quizState.answers.map((ans, idx) => ({
+                questionId: idx,
+                selectedAnswer: ans.selectedAnswer,
+                correctAnswer: questionsAny[idx].correctAnswer,
+                isCorrect: ans.selectedAnswer === questionsAny[idx].correctAnswer,
+                timeTaken: ans.timeTakenSec || 0,
+                difficulty: questionsAny[idx].difficulty,
+              })),
+            });
+            
+            if (result) {
+              toast({
+                title: "Quiz Saved!",
+                description: `Category: ${result.category} | Rating: ${result.newRating} (${result.ratingChange > 0 ? '+' : ''}${result.ratingChange})`,
+              });
+            }
+          } catch (error) {
+            console.error('Error saving to Firebase:', error);
+            toast({
+              title: "Save Failed",
+              description: "Could not save quiz to database. Your local progress is still saved.",
+              variant: "destructive",
+            });
+          }
+        };
+        
+        saveToFirebase();
+      }
     }
-  }, [quizState?.isCompleted]);
+  }, [quizState?.isCompleted, user, saveQuizResult, toast]);
 
-  const handleStart = (quizType: 'topic' | 'subject' | 'full', duration: number, subject?: string, topic?: string) => {
+  const handleStart = async (quizType: 'topic' | 'subject' | 'full', duration: number, subject?: string, topic?: string) => {
     let questionPool;
     let targetCount;
     let category;
@@ -103,6 +150,24 @@ const GateQuiz = () => {
       questionPool = questionBank;
       targetCount = 15;
       category = getCategory('gate'); // Use default category
+      
+      // Use Firebase recommended difficulty if available
+      if (user) {
+        const recommended = await getRecommendedDifficulty();
+        if (recommended) {
+          // Build custom adaptive quiz based on Firebase recommendations
+          const questions = buildAdaptiveQuiz(questionPool as any, category, Math.min(targetCount, questionPool.length));
+          startQuizWithQuestions({ 
+            examName: 'gate', 
+            quizType, 
+            questions: questions as any, 
+            durationMin: duration, 
+            mode: 'adaptive', 
+            subject 
+          });
+          return;
+        }
+      }
     } else if (quizType === 'topic' && topic && subject) {
       questionPool = getQuestionsByTopic(subject, topic);
       targetCount = 6;
@@ -169,7 +234,7 @@ const GateQuiz = () => {
   };
 
   if (stage === 'start') {
-    return <QuizStart onStart={handleStart} onStartCalibration={handleCalibrationStart} />;
+    return <QuizStart onStart={handleStart} />;
   }
 
   if (stage === 'results' && quizState && quizState.questions?.length) {

@@ -130,29 +130,6 @@ export const RatingGuide = ({ tips, subjectRatings, currentRating }: RatingGuide
           </p>
         </CardContent>
       </Card>
-
-      {/* Comparison */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Progress</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex justify-between items-center p-3 bg-accent/30 rounded-lg">
-            <span className="text-sm">Your Rating</span>
-            <span className="font-bold text-lg">{currentRating}</span>
-          </div>
-          <div className="flex justify-between items-center p-3 bg-accent/30 rounded-lg">
-            <span className="text-sm">Average User Rating</span>
-            <span className="font-semibold">1200</span>
-          </div>
-          <div className="flex justify-between items-center p-3 bg-accent/30 rounded-lg">
-            <span className="text-sm">You're Ahead By</span>
-            <span className="font-semibold text-green-600">
-              {currentRating > 1200 ? `+${currentRating - 1200}` : `${currentRating - 1200}`}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

@@ -5,9 +5,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Assignment, Submission, FileAttachment } from '@/types/plagiarism';
-import { saveSubmission, getCurrentUser } from '@/lib/plagiarismStorage';
+import { saveSubmission } from '@/lib/plagiarismStorage';
 import { Send, CheckCircle, Upload, X, FileText, Image as ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SubmissionFormProps {
   assignment: Assignment;
@@ -16,6 +17,7 @@ interface SubmissionFormProps {
 }
 
 export const SubmissionForm = ({ assignment, existingSubmission, onSubmitted }: SubmissionFormProps) => {
+  const { user } = useAuth();
   const [content, setContent] = useState(existingSubmission?.content || '');
   const [attachments, setAttachments] = useState<FileAttachment[]>(existingSubmission?.attachments || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,14 +27,13 @@ export const SubmissionForm = ({ assignment, existingSubmission, onSubmitted }: 
     e.preventDefault();
     setIsSubmitting(true);
 
-    const currentUser = getCurrentUser();
-    if (!currentUser) return;
+    if (!user) return;
 
     const submission: Submission = {
       id: existingSubmission?.id || `sub_${Date.now()}`,
       assignmentId: assignment.id,
-      studentId: currentUser.userId,
-      studentName: currentUser.userName,
+      studentId: user.id,
+      studentName: user.name,
       submittedAt: new Date().toISOString(),
       status: 'submitted',
       content,

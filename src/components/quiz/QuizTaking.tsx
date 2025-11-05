@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { quizQuestions } from "@/data/sampleData";
 import { useQuiz } from "@/contexts/QuizContext";
 
@@ -72,20 +70,58 @@ export const QuizTaking = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <RadioGroup 
-              value={selectedAnswer?.toString()} 
-              onValueChange={(value) => onAnswerSelect(parseInt(value))}
-              className="space-y-4"
-            >
-              {question.options.map((option, index) => (
-                <div key={index} className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors">
-                  <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-                  <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer font-medium">
-                    {String.fromCharCode(65 + index)}. {option}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
+            <div className="space-y-3">
+              {question.options.map((option, index) => {
+                const isSelected = selectedAnswer === index;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => {
+                      // Toggle functionality: if already selected, deselect; otherwise select
+                      if (isSelected) {
+                        onAnswerSelect(null as any); // Deselect
+                      } else {
+                        onAnswerSelect(index); // Select
+                      }
+                    }}
+                    className={`
+                      flex items-center space-x-3 p-4 rounded-lg border-2 
+                      cursor-pointer transition-all duration-200
+                      ${isSelected 
+                        ? 'border-primary bg-primary/10 shadow-md' 
+                        : 'border-border hover:border-primary/50 hover:bg-accent/50'
+                      }
+                    `}
+                  >
+                    <div className={`
+                      w-6 h-6 rounded-full border-2 flex items-center justify-center
+                      transition-all duration-200
+                      ${isSelected 
+                        ? 'border-primary bg-primary' 
+                        : 'border-muted-foreground'
+                      }
+                    `}>
+                      {isSelected && (
+                        <svg 
+                          className="w-4 h-4 text-white" 
+                          fill="none" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth="3" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path d="M5 13l4 4L19 7"></path>
+                        </svg>
+                      )}
+                    </div>
+                    <span className={`flex-1 font-medium ${isSelected ? 'text-primary' : ''}`}>
+                      {String.fromCharCode(65 + index)}. {option}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
 
             {selectedAnswer !== null && (
               <div className="mt-6 p-4 bg-accent/30 rounded-lg">

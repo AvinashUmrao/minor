@@ -117,31 +117,11 @@ export const JeeQuizStart = ({ onStart, onStartCalibration }: JeeQuizStartProps)
           <p className="text-xl text-muted-foreground mb-8">
             Choose your test type and begin your adaptive learning journey
           </p>
-          <div className="flex justify-center gap-4 flex-wrap mb-6">
-            <Badge variant="secondary" className="text-base px-4 py-2">
-              {getCategoryIcon(currentCategory)} Category: <span className={`font-bold ml-1 ${getCategoryColor(currentCategory)}`}>{currentCategory}</span>
-            </Badge>
-            <Badge variant="outline" className="text-base px-4 py-2">
-              <TrendingUp className="w-4 h-4 mr-1" /> Rating: <span className="font-bold ml-1">{currentRating}</span>
-            </Badge>
-            <Badge variant="outline" className="text-base px-4 py-2 bg-orange-500/10 border-orange-500">
-              <Flame className="w-4 h-4 mr-1 text-orange-500" /> Streak: <span className="font-bold ml-1">{streakData.currentStreak} days</span>
-            </Badge>
-            <Badge variant="outline" className="text-base px-4 py-2 bg-yellow-500/10 border-yellow-500">
-              <Award className="w-4 h-4 mr-1 text-yellow-500" /> Badges: <span className="font-bold ml-1">{badges.length}</span>
-            </Badge>
-          </div>
           <div className="flex justify-center gap-3">
             <Link to="/progress">
               <Button variant="outline" size="sm">
                 <Target className="w-4 h-4 mr-2" />
-                View Progress
-              </Button>
-            </Link>
-            <Link to="/leaderboard">
-              <Button variant="outline" size="sm">
-                <Trophy className="w-4 h-4 mr-2" />
-                Leaderboard
+                View Dashboard
               </Button>
             </Link>
           </div>

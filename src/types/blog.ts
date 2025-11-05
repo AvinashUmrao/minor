@@ -5,6 +5,8 @@ export interface Blog {
   excerpt: string;
   content: string;
   author: string;
+  authorId?: string; // Firebase user ID
+  authorEmail?: string; // User email for verification
   date: string;
   readTime: string;
   category: string;

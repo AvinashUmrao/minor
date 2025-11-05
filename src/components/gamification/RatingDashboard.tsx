@@ -27,7 +27,7 @@ export const RatingDashboard = ({ rating, breakdown, milestones }: RatingDashboa
   const currentMilestone = milestones.find((m) => !m.isAchieved) || milestones[milestones.length - 1];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-[1cm]">
       {/* Current Rating */}
       <Card>
         <CardHeader>

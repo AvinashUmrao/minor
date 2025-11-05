@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, BookOpen, Users, Award, Search, Shield } from "lucide-react";
+import { Menu, X, BookOpen, Users, Award, Shield } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,9 +15,14 @@ const Navbar = () => {
     { name: "Exam Prep", href: "/exam-prep", icon: Award },
     { name: "Blogs", href: "/blogs", icon: Users },
     { name: "Plagiarism Check", href: "/plagiarism", icon: Shield },
-    { name: "Plague Check", href: "/plague-check", icon: Search },
   ];
 
+  const userNavigation = [
+    { name: "Dashboard", href: "/progress", icon: Award },
+  ];
+
+
+  
   const handleLogout = async () => {
     try {
       await logout();
@@ -44,6 +49,26 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navigation.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-all duration-300 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-soft"
+                      : "text-muted-foreground hover:text-primary hover:bg-accent"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="font-medium">{item.name}</span>
+                </Link>
+              );
+            })}
+
+            {/* User Dashboard - Only for logged-in users */}
+            {user && userNavigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
               return (
@@ -101,6 +126,27 @@ const Navbar = () => {
         <div className="md:hidden bg-card border-t border-border">
           <div className="px-2 pt-2 pb-3 space-y-1">
             {navigation.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-300 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-primary hover:bg-accent"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="font-medium">{item.name}</span>
+                </Link>
+              );
+            })}
+
+            {/* User Dashboard - Mobile */}
+            {user && userNavigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
               return (

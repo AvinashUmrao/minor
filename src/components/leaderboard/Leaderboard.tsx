@@ -37,23 +37,22 @@ export const Leaderboard = () => {
   ];
   
   return (
-    <div className="min-h-screen bg-background pt-20">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-4">
-            <Trophy className="w-16 h-16 text-yellow-500" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Leaderboard
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Compete with top learners and track your progress
-          </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="text-center">
+        <div className="flex justify-center mb-4">
+          <Trophy className="w-12 h-12 text-yellow-500" />
         </div>
+        <h2 className="text-3xl font-bold text-foreground mb-2">
+          Leaderboard
+        </h2>
+        <p className="text-muted-foreground">
+          Compete with top learners and track your progress
+        </p>
+      </div>
         
-        {/* Sort Options */}
-        <Card className="border-0 shadow-strong mb-8">
+      {/* Sort Options */}
+      <Card className="border-0 shadow-strong mb-8">
           <CardHeader>
             <CardTitle>Sort By</CardTitle>
             <CardDescription>Choose how to rank students</CardDescription>
@@ -76,10 +75,10 @@ export const Leaderboard = () => {
               })}
             </div>
           </CardContent>
-        </Card>
+      </Card>
         
-        {/* Leaderboard Table */}
-        <Card className="border-0 shadow-strong">
+      {/* Leaderboard Table */}
+      <Card className="border-0 shadow-strong">
           <CardHeader>
             <CardTitle>Top Performers</CardTitle>
             <CardDescription>
@@ -153,10 +152,10 @@ export const Leaderboard = () => {
               ))}
             </div>
           </CardContent>
-        </Card>
+      </Card>
         
-        {/* Info Card */}
-        <Card className="border-0 shadow-medium mt-8 bg-gradient-to-br from-primary/5 to-primary/10">
+      {/* Info Card */}
+      <Card className="border-0 shadow-medium bg-gradient-to-br from-primary/5 to-primary/10">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
               <Trophy className="w-8 h-8 text-primary flex-shrink-0" />
@@ -171,8 +170,7 @@ export const Leaderboard = () => {
               </div>
             </div>
           </CardContent>
-        </Card>
-      </div>
+      </Card>
     </div>
   );
 };

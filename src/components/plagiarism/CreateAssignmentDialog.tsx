@@ -7,13 +7,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
 import { Assignment, AssignmentType } from '@/types/plagiarism';
-import { saveAssignment, getCurrentUser } from '@/lib/plagiarismStorage';
+import { saveAssignment } from '@/lib/plagiarismStorage';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CreateAssignmentDialogProps {
   onAssignmentCreated?: () => void;
 }
 
 export const CreateAssignmentDialog = ({ onAssignmentCreated }: CreateAssignmentDialogProps) => {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -26,15 +28,14 @@ export const CreateAssignmentDialog = ({ onAssignmentCreated }: CreateAssignment
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const currentUser = getCurrentUser();
-    if (!currentUser) return;
+    if (!user) return;
 
     const assignment: Assignment = {
       id: `assign_${Date.now()}`,
       title,
       description,
       type,
-      createdBy: currentUser.userId,
+      createdBy: user.id,
       createdAt: new Date().toISOString(),
       dueDate: new Date(dueDate).toISOString(),
       maxScore,

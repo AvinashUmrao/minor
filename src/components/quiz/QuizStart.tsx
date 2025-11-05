@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Brain, ArrowLeft, Clock, BookOpen, List, Target, TrendingUp, Flame, Award, Trophy } from "lucide-react";
+import { Brain, ArrowLeft, Clock, BookOpen, List, Target, TrendingUp, Flame, Award, Trophy, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,17 +12,21 @@ import { subjects, getTopicsBySubject } from "@/data/questionBank";
 import { useStreak } from "@/hooks/useStreak";
 import { useBadges } from "@/hooks/useBadges";
 import { useRating } from "@/hooks/useRating";
+import { useFirebaseQuiz } from "@/hooks/useFirebaseQuiz";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface QuizStartProps {
   onStart: (quizType: 'topic' | 'subject' | 'full', duration: number, subject?: string, topic?: string) => void;
-  onStartCalibration?: (duration: number, subject: string) => void;
 }
 
-export const QuizStart = ({ onStart, onStartCalibration }: QuizStartProps) => {
+export const QuizStart = ({ onStart }: QuizStartProps) => {
+  const { user } = useAuth();
   const [selectedType, setSelectedType] = useState<'topic' | 'subject' | 'full'>('full');
   const [duration, setDuration] = useState(15);
   const [selectedSubject, setSelectedSubject] = useState<string>('algorithms');
   const [selectedTopic, setSelectedTopic] = useState<string>('');
+  const [needsInitialTest, setNeedsInitialTest] = useState(false);
+  const [recommendedDifficulty, setRecommendedDifficulty] = useState<{ easy: number; medium: number; hard: number } | null>(null);
   
   const currentCategory = getCategory('gate', selectedSubject);
   const currentRating = getRating('gate', selectedSubject);
@@ -33,12 +37,32 @@ export const QuizStart = ({ onStart, onStartCalibration }: QuizStartProps) => {
   const { stats: badgeStats, isLoading: badgesLoading } = useBadges();
   const { rating, isLoading: ratingLoading } = useRating();
   
+  // Firebase integration
+  const { userProfile, checkNeedsInitialTest, getRecommendedDifficulty } = useFirebaseQuiz();
+  
   // Set first topic when subject changes
   useEffect(() => {
     if (availableTopics.length > 0 && !selectedTopic) {
       setSelectedTopic(availableTopics[0].id);
     }
   }, [selectedSubject, availableTopics, selectedTopic]);
+  
+  // Check if user needs initial test
+  useEffect(() => {
+    const checkInitialTest = async () => {
+      if (user) {
+        const needs = await checkNeedsInitialTest();
+        setNeedsInitialTest(needs);
+        
+        if (!needs) {
+          const difficulty = await getRecommendedDifficulty();
+          setRecommendedDifficulty(difficulty);
+        }
+      }
+    };
+    
+    checkInitialTest();
+  }, [user]);
 
   const quizTypes = [
     {
@@ -93,9 +117,6 @@ export const QuizStart = ({ onStart, onStartCalibration }: QuizStartProps) => {
     }
   };
 
-  const handleCalibration = () => {
-    onStartCalibration?.(duration, selectedSubject);
-  };
   
   const getCategoryColor = (cat: string) => {
     if (cat === 'Best') return 'text-success';
@@ -122,31 +143,11 @@ export const QuizStart = ({ onStart, onStartCalibration }: QuizStartProps) => {
           <p className="text-xl text-muted-foreground mb-8">
             Choose your test type and begin your adaptive learning journey
           </p>
-          <div className="flex justify-center gap-4 flex-wrap mb-6">
-            <Badge variant="secondary" className="text-base px-4 py-2">
-              {getCategoryIcon(currentCategory)} Category: <span className={`font-bold ml-1 ${getCategoryColor(currentCategory)}`}>{currentCategory}</span>
-            </Badge>
-            <Badge variant="outline" className="text-base px-4 py-2">
-              <TrendingUp className="w-4 h-4 mr-1" /> Rating: <span className="font-bold ml-1">{ratingLoading ? '...' : rating.current}</span>
-            </Badge>
-            <Badge variant="outline" className="text-base px-4 py-2 bg-orange-500/10 border-orange-500">
-              <Flame className="w-4 h-4 mr-1 text-orange-500" /> Streak: <span className="font-bold ml-1">{streakLoading ? '...' : streak.currentStreak} days</span>
-            </Badge>
-            <Badge variant="outline" className="text-base px-4 py-2 bg-yellow-500/10 border-yellow-500">
-              <Award className="w-4 h-4 mr-1 text-yellow-500" /> Badges: <span className="font-bold ml-1">{badgesLoading ? '...' : badgeStats.earned}</span>
-            </Badge>
-          </div>
           <div className="flex justify-center gap-3">
             <Link to="/progress">
               <Button variant="outline" size="sm">
                 <Target className="w-4 h-4 mr-2" />
-                View Progress
-              </Button>
-            </Link>
-            <Link to="/leaderboard">
-              <Button variant="outline" size="sm">
-                <Trophy className="w-4 h-4 mr-2" />
-                Leaderboard
+                View Dashboard
               </Button>
             </Link>
           </div>
@@ -255,6 +256,58 @@ export const QuizStart = ({ onStart, onStartCalibration }: QuizStartProps) => {
           </Card>
         )}
 
+        {/* Initial Test Info */}
+        {user && needsInitialTest && (
+          <Card className="max-w-2xl mx-auto border-2 border-primary shadow-strong mb-8 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-primary mb-2">First Time? Take the Initial Quiz!</h4>
+                  <p className="text-sm text-muted-foreground">
+                    This will be your first quiz. It contains mixed difficulty questions to assess your level and personalize future quizzes for you.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Recommended Difficulty Info */}
+        {user && !needsInitialTest && recommendedDifficulty && userProfile && (
+          <Card className="max-w-2xl mx-auto border-0 shadow-medium mb-8 bg-accent/30">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-6 h-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold mb-2">Personalized Difficulty Mix</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Based on your <span className="font-semibold">{userProfile.currentCategory}</span> category and recent performance:
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-success">{Math.round(recommendedDifficulty.easy * 100)}%</div>
+                      <div className="text-xs text-muted-foreground">Easy</div>
+                    </div>
+                    <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-warning">{Math.round(recommendedDifficulty.medium * 100)}%</div>
+                      <div className="text-xs text-muted-foreground">Medium</div>
+                    </div>
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-destructive">{Math.round(recommendedDifficulty.hard * 100)}%</div>
+                      <div className="text-xs text-muted-foreground">Hard</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Quiz Details */}
         <Card className="max-w-2xl mx-auto border-0 shadow-strong mb-8">
           <CardHeader className="text-center">
@@ -280,7 +333,9 @@ export const QuizStart = ({ onStart, onStartCalibration }: QuizStartProps) => {
                 <div className="text-sm text-muted-foreground">Minutes</div>
               </div>
               <div className="p-4 bg-accent/50 rounded-xl">
-                <div className="text-2xl font-bold text-success mb-2">Mixed</div>
+                <div className="text-2xl font-bold text-success mb-2">
+                  {needsInitialTest ? 'Mixed' : 'Adaptive'}
+                </div>
                 <div className="text-sm text-muted-foreground">Difficulty</div>
               </div>
             </div>
@@ -307,25 +362,9 @@ export const QuizStart = ({ onStart, onStartCalibration }: QuizStartProps) => {
             </div>
 
             <div className="text-center space-y-4">
-              {onStartCalibration && (
-                <div className="p-4 bg-primary/5 border-2 border-primary/20 rounded-lg mb-4">
-                  <h4 className="font-semibold mb-2 flex items-center justify-center gap-2">
-                    <Target className="w-5 h-5" />
-                    New to this subject?
-                  </h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Take the calibration test to determine your starting level
-                  </p>
-                  <Button onClick={handleCalibration} variant="default" className="w-full" size="lg">
-                    <Target className="mr-2 h-5 w-5" />
-                    Take Initial Level Test (9 Questions)
-                  </Button>
-                </div>
-              )}
-              
               <Button onClick={handleStart} size="lg" variant="hero" className="w-full">
                 <Brain className="mr-2 h-5 w-5" />
-                Start Adaptive {selectedQuizType?.title}
+                {needsInitialTest ? 'Take Initial Quiz' : 'Take Quiz'}
               </Button>
               
               <Link to="/gate">

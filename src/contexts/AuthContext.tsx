@@ -14,6 +14,8 @@ interface User {
   id: string;
   name: string;
   email: string;
+  role: 'teacher' | 'student';
+  isTeacher: boolean;
 }
 
 interface AuthContextType {
@@ -22,6 +24,7 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  isTeacher: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,7 +33,25 @@ const AuthContext = createContext<AuthContextType>({
   signup: async () => false,
   logout: async () => {},
   isAuthenticated: false,
+  isTeacher: false,
 });
+
+// Authorized Teachers List
+const authorizedTeachers = [
+  { name: "Dr. Rajesh Kumar", email: "rajesh.kumar@edusmart.edu" },
+  { name: "Prof. Priya Sharma", email: "priya.sharma@edusmart.edu" },
+  { name: "Dr. Amit Patel", email: "amit.patel@edusmart.edu" },
+  { name: "Ms. Sneha Gupta", email: "sneha.gupta@edusmart.edu" },
+  { name: "Mr. Vikram Singh", email: "vikram.singh@edusmart.edu" },
+];
+
+// Check if email belongs to an authorized teacher
+const isAuthorizedTeacher = (email: string): boolean => {
+  if (!email) return false;
+  return authorizedTeachers.some(
+    teacher => teacher.email.toLowerCase() === email.toLowerCase()
+  );
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -40,10 +61,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
+        const userEmail = firebaseUser.email || "";
+        const isTeacher = isAuthorizedTeacher(userEmail);
+        
         setUser({
           id: firebaseUser.uid,
           name: firebaseUser.displayName || firebaseUser.email || "User",
-          email: firebaseUser.email || "",
+          email: userEmail,
+          role: isTeacher ? 'teacher' : 'student',
+          isTeacher: isTeacher,
         });
       } else {
         setUser(null);
@@ -94,6 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signup,
         logout,
         isAuthenticated: !!user,
+        isTeacher: user?.isTeacher || false,
       }}
     >
       {!loading && children}

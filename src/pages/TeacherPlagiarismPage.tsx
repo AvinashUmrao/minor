@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -12,18 +13,17 @@ import { Assignment, Submission, PlagiarismMatch, PlagiarismAnalysis } from '@/t
 import {
   getAssignments,
   getSubmissionsByAssignment,
-  getCurrentUser,
   deleteAssignment,
   saveAnalysis,
   getAnalysisByAssignment,
-  setCurrentUser,
 } from '@/lib/plagiarismStorage';
 import { detectPlagiarism } from '@/lib/plagiarismDetection';
 import { generatePlagiarismReportPDF } from '@/lib/plagiarismPdfGenerator';
-import { FileText, Download, Play, ArrowLeft, Paperclip, Image as ImageIcon, RefreshCw } from 'lucide-react';
+import { FileText, Download, Play, ArrowLeft, Paperclip, Image as ImageIcon } from 'lucide-react';
 
 const TeacherPlagiarismPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -37,11 +37,10 @@ const TeacherPlagiarismPage = () => {
   }, []);
 
   const loadAssignments = () => {
-    const currentUser = getCurrentUser();
-    if (!currentUser) return;
+    if (!user) return;
 
     const allAssignments = getAssignments();
-    const teacherAssignments = allAssignments.filter(a => a.createdBy === currentUser.userId);
+    const teacherAssignments = allAssignments.filter(a => a.createdBy === user.id);
     setAssignments(teacherAssignments);
   };
 
@@ -310,12 +309,6 @@ const TeacherPlagiarismPage = () => {
     );
   }
 
-  const handleSwitchRole = () => {
-    // Directly switch to student role without confirmation
-    setCurrentUser('student1', 'Alex Thompson', 'student');
-    navigate('/plagiarism', { replace: true });
-    window.location.reload(); // Force reload to show student view
-  };
 
   return (
     <div className="container mx-auto pt-24 pb-12 px-4">
@@ -323,15 +316,6 @@ const TeacherPlagiarismPage = () => {
         <div>
           <div className="flex items-center gap-3 mb-4">
             <Badge variant="outline">Teacher Dashboard</Badge>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleSwitchRole}
-              className="gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Switch to Student
-            </Button>
           </div>
           <h1 className="text-4xl font-bold mb-2">Plagiarism Detection System</h1>
           <p className="text-muted-foreground text-lg">

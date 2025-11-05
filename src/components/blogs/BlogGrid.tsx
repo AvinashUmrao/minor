@@ -99,14 +99,20 @@ export const BlogGrid = ({
               <p className="text-muted-foreground line-clamp-3 mb-4">
                 {blog.excerpt}
               </p>
-              <Button
-                variant="ghost"
-                className="p-0"
-                onClick={() => onReadMore(blog.id)}
-              >
-                Read More{" "}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <User className="w-4 h-4" />
+                  <span>{blog.author}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  className="p-0"
+                  onClick={() => onReadMore(blog.id)}
+                >
+                  Read More{" "}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
