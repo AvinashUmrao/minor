@@ -397,12 +397,40 @@ const updateGlobalLeaderboard = (progress: UserProgress): void => {
 };
 
 /**
- * Get global leaderboard
+ * Check if email belongs to a teacher
+ */
+const isTeacherEmail = (email: string): boolean => {
+  const authorizedTeachers = [
+    "rajesh.kumar@edusmart.edu",
+    "priya.sharma@edusmart.edu",
+    "amit.patel@edusmart.edu",
+    "sneha.gupta@edusmart.edu",
+    "vikram.singh@edusmart.edu",
+  ];
+  
+  if (!email) return false;
+  return authorizedTeachers.some(
+    teacherEmail => teacherEmail.toLowerCase() === email.toLowerCase()
+  );
+};
+
+/**
+ * Get global leaderboard (excludes teachers)
  */
 export const getGlobalLeaderboard = (): LeaderboardEntry[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.GLOBAL_LEADERBOARD);
-    return data ? JSON.parse(data) : [];
+    const leaderboard: LeaderboardEntry[] = data ? JSON.parse(data) : [];
+    
+    // Filter out teachers from the leaderboard
+    const studentLeaderboard = leaderboard.filter(entry => !isTeacherEmail(entry.email));
+    
+    // Reassign ranks after filtering
+    studentLeaderboard.forEach((entry, index) => {
+      entry.rank = index + 1;
+    });
+    
+    return studentLeaderboard;
   } catch {
     return [];
   }
