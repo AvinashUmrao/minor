@@ -109,15 +109,21 @@ export const getPublishedBlogs = async (): Promise<FirebaseBlog[]> => {
     const blogsRef = collection(db, "blogs");
     const q = query(
       blogsRef,
-      where("status", "==", "published"),
-      orderBy("createdAt", "desc")
+      where("status", "==", "published")
     );
     const snapshot = await getDocs(q);
     
-    return snapshot.docs.map(doc => ({
+    const blogs = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     } as FirebaseBlog));
+    
+    // Sort in frontend to avoid index requirement
+    return blogs.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis?.() || 0;
+      const timeB = b.createdAt?.toMillis?.() || 0;
+      return timeB - timeA; // Newest first
+    });
   } catch (error) {
     console.error("Error getting published blogs:", error);
     return [];

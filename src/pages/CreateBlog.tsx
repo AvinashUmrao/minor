@@ -171,25 +171,20 @@ export default function CreateBlog() {
       // Convert image to Base64
       const imageBase64 = await fileToBase64(formData.imageFile!);
 
-      // Create blog object with author info
+      // Create blog object for Firebase
       const newBlog = {
-        id: generateBlogId(),
+        userId: user?.id || '',
         title: formData.title.trim(),
-        author: user?.name || formData.author.trim(),
-        authorId: user?.id,
-        authorEmail: user?.email,
-        category: formData.category,
         content: formData.content.trim(),
         excerpt: formData.excerpt.trim(),
-        readTime: formData.readTime || calculateReadTime(formData.content),
-        image: imageBase64,
-        date: new Date().toISOString().split("T")[0], // YYYY-MM-DD
-        slug: generateSlug(formData.title),
-        isUserCreated: true,
+        category: formData.category,
+        tags: [],
+        imageUrl: imageBase64,
+        status: 'published' as const,
       };
 
       // Save to Firebase
-      await createBlog(newBlog);
+      await createBlog(user?.id || '', newBlog);
 
       toast({
         title: "Blog Created! 🎉",
