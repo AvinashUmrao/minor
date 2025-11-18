@@ -134,20 +134,6 @@ const JeeQuiz = () => {
     });
   };
 
-  const handleCalibrationStart = (duration: number, subject: string) => {
-    const questionPool = getJeeQuestionsBySubject(subject);
-    const questions = buildCalibrationQuiz(questionPool as any);
-    
-    startQuizWithQuestions({ 
-      examName: 'jee', 
-      quizType: 'subject', 
-      questions: questions as any, 
-      durationMin: duration, 
-      mode: 'calibration', 
-      subject 
-    });
-  };
-
   const handleAnswerSelect = (answerIndex: number) => {
     if (quizState) {
       selectAnswer(quizState.currentQuestion, answerIndex);
@@ -176,8 +162,7 @@ const JeeQuiz = () => {
 
   if (stage === 'start') {
     return <JeeQuizStart 
-      onStart={handleStart} 
-      onStartCalibration={handleCalibrationStart}
+      onStart={handleStart}
     />;
   }
 

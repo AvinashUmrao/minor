@@ -9,6 +9,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 import { initializeUserProfile } from "@/lib/firebaseUserService";
+import { initializeUserProgress, updateActiveDays } from "@/lib/userProgressService";
 
 // Define User interface
 interface User {
@@ -65,13 +66,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userEmail = firebaseUser.email || "";
         const isTeacher = isAuthorizedTeacher(userEmail);
         
-        // Initialize user profile in Firebase if needed
+        // Initialize user profile in Firebase if doesn't exist
         try {
           await initializeUserProfile(
             firebaseUser.uid,
             userEmail,
             firebaseUser.displayName || firebaseUser.email || "User"
           );
+          
+          // Initialize/update user progress in localStorage
+          const localProgress = initializeUserProgress(
+            firebaseUser.uid,
+            firebaseUser.displayName || firebaseUser.email || "User",
+            userEmail
+          );
+          
+          // Update active days (login tracking)
+          await updateActiveDays(firebaseUser.uid);
         } catch (error) {
           console.error("Error initializing user profile:", error);
         }

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import {
   saveQuizSession,
@@ -11,6 +11,7 @@ import {
   DifficultyLevel,
 } from '@/lib/firebaseUserService';
 import { saveUserActivity } from '@/lib/firebaseUserService';
+import { checkAndAwardBadges } from '@/lib/badgeUtils';
 
 interface QuizAnswer {
   questionId: number;
@@ -47,6 +48,8 @@ interface QuizState {
 
 interface QuizContextType {
   quizState: QuizState | null;
+  earnedBadges: string[]; // Newly earned badge IDs to show notifications
+  clearEarnedBadges: () => void; // Clear notifications after showing
   startQuiz: (examName: string, quizType: 'topic' | 'subject' | 'full', totalQuestions: number, duration: number) => void;
   startQuizWithQuestions: (params: { examName: string; quizType: 'topic' | 'subject' | 'full'; questions: QuizQuestion[]; durationMin: number; mode?: 'standard' | 'calibration' | 'adaptive'; subject?: string; }) => void;
   selectAnswer: (questionId: number, answerIndex: number) => void;
@@ -67,6 +70,12 @@ export const QuizProvider = ({ children }: { children: ReactNode }) => {
   const [quizState, setQuizState] = useState<QuizState | null>(null);
   const [questionViewTs, setQuestionViewTs] = useState<number | null>(null);
   const [quizStartTime, setQuizStartTime] = useState<number | null>(null);
+  const [earnedBadges, setEarnedBadges] = useState<string[]>([]); // Store newly earned badges
+  const hasProcessedQuizCompletion = useRef(false); // Guard to prevent duplicate Firebase saves
+
+  const clearEarnedBadges = () => {
+    setEarnedBadges([]);
+  };
 
   // Initialize or update user progress when user logs in
   useEffect(() => {
@@ -144,6 +153,7 @@ export const QuizProvider = ({ children }: { children: ReactNode }) => {
 
   const startQuizWithQuestions = async ({ examName, quizType, questions, durationMin, mode = 'standard', subject }: { examName: string; quizType: 'topic' | 'subject' | 'full'; questions: QuizQuestion[]; durationMin: number; mode?: 'standard' | 'calibration' | 'adaptive'; subject?: string; }) => {
     setQuizStartTime(Date.now());
+    hasProcessedQuizCompletion.current = false; // Reset guard for new quiz
     const newState: QuizState = {
       examName,
       quizType,
@@ -306,7 +316,10 @@ export const QuizProvider = ({ children }: { children: ReactNode }) => {
     setQuizState(newState);
     
     // Record quiz attempt in background (non-blocking)
-    if (user && quizStartTime) {
+    // GUARD: Only process once to prevent duplicate Firebase saves
+    if (user && quizStartTime && !hasProcessedQuizCompletion.current) {
+      hasProcessedQuizCompletion.current = true; // Set guard immediately
+      
       const questionsAttempted = newAnswers.filter(a => a.selectedAnswer !== null).length;
       const correctAnswers = newAnswers.filter(a => a.isCorrect).length;
       const accuracy = questionsAttempted > 0 ? (correctAnswers / questionsAttempted) * 100 : 0;
@@ -352,8 +365,28 @@ export const QuizProvider = ({ children }: { children: ReactNode }) => {
             saveUserActivity(user.id, today),
             deleteQuizSession(user.id, quizState.examName, quizState.quizType),
           ]);
+          
+          console.log('Quiz saved to Firebase successfully');
+          
+          // Check for newly earned badges
+          const updatedProfile = await getUserProfile(user.id);
+          if (updatedProfile) {
+            const newBadges = await checkAndAwardBadges(user.id, {
+              totalQuizzes: updatedProfile.totalQuizzes,
+              currentStreak: updatedProfile.currentStreak,
+              currentRating: updatedProfile.currentRating,
+              lastQuizAccuracy: accuracy,
+            });
+            
+            if (newBadges.length > 0) {
+              setEarnedBadges(newBadges);
+              console.log('🎉 New badges earned:', newBadges);
+            }
+          }
         } catch (error) {
           console.error('Error recording quiz attempt:', error);
+          // Reset guard on error so user can retry
+          hasProcessedQuizCompletion.current = false;
         }
       })();
     }
@@ -386,6 +419,8 @@ export const QuizProvider = ({ children }: { children: ReactNode }) => {
     <QuizContext.Provider
       value={{
         quizState,
+        earnedBadges,
+        clearEarnedBadges,
         startQuiz,
         startQuizWithQuestions,
         selectAnswer,

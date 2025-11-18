@@ -64,6 +64,18 @@ export interface UserProfile {
   peakRating: number;
   hasCompletedInitialTest: boolean;
   
+  // Activity tracking
+  activeDays: number; // Count of unique login days
+  lastActiveDate: string; // Date string (YYYY-MM-DD) of last login
+  
+  // Streak tracking (quiz completion streaks)
+  currentStreak: number; // Consecutive days with at least 1 quiz completed
+  longestStreak: number; // Best streak achieved
+  lastQuizDate: string; // Date string (YYYY-MM-DD) of last quiz completion
+  
+  // Badges
+  earnedBadges: string[]; // Array of badge IDs
+  
   // Subject-wise performance (for tracking only)
   subjectPerformance: {
     [subject: string]: {
@@ -217,6 +229,7 @@ export const initializeUserProfile = async (
   }
   
   // Create new user profile
+  const today = new Date().toISOString().split('T')[0];
   const newProfile: UserProfile = {
     userId,
     email,
@@ -229,6 +242,12 @@ export const initializeUserProfile = async (
     currentCategory: "average",
     currentRating: 1000,
     peakRating: 1000,
+    activeDays: 1, // First login counts as 1 active day
+    lastActiveDate: today, // Track today as first active date
+    currentStreak: 0, // No streak until first quiz
+    longestStreak: 0, // No streak achieved yet
+    lastQuizDate: '', // No quiz completed yet
+    earnedBadges: [], // No badges earned yet
     subjectPerformance: {},
     hasCompletedInitialTest: false,
     lastActive: serverTimestamp(),
@@ -309,6 +328,36 @@ const updateUserProfileAfterQuiz = async (
   
   const { score, totalQuestions, accuracy, subject, difficulty, ratingChange, categoryAtTime } = quizData;
   
+  const today = new Date().toISOString().split('T')[0];
+  const lastQuizDate = profile.lastQuizDate || '';
+  
+  // Calculate streak update
+  let newStreak = profile.currentStreak || 0;
+  let newLongest = profile.longestStreak || 0;
+  
+  // Only update streak if this is a new quiz day
+  if (lastQuizDate !== today) {
+    if (!lastQuizDate) {
+      // First quiz ever
+      newStreak = 1;
+      newLongest = 1;
+    } else {
+      const lastQuizDateObj = new Date(lastQuizDate);
+      const todayDateObj = new Date(today);
+      const dayDiff = Math.floor((todayDateObj.getTime() - lastQuizDateObj.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (dayDiff === 1) {
+        // Consecutive day - increase streak
+        newStreak = (profile.currentStreak || 0) + 1;
+        newLongest = Math.max(profile.longestStreak || 0, newStreak);
+      } else if (dayDiff > 1) {
+        // Streak broken - reset to 1
+        newStreak = 1;
+      }
+      // dayDiff === 0 shouldn't happen due to check above
+    }
+  }
+  
   // Update overall stats
   const newTotalQuestions = profile.totalQuestionsAttempted + totalQuestions;
   const newCorrectAnswers = profile.totalCorrectAnswers + score;
@@ -347,6 +396,9 @@ const updateUserProfileAfterQuiz = async (
     currentRating: newRating,
     peakRating: newPeakRating,
     currentCategory: newCategory,
+    currentStreak: newStreak, // Update streak
+    longestStreak: newLongest, // Update longest streak
+    lastQuizDate: today, // Track last quiz date
     subjectPerformance: {
       ...profile.subjectPerformance,
       [subject]: subjectPerf,
@@ -359,6 +411,8 @@ const updateUserProfileAfterQuiz = async (
   }
   
   await updateDoc(userRef, updates);
+  
+  console.log(`Streak updated - Current: ${newStreak}, Longest: ${newLongest}`);
 };
 
 /**
@@ -734,30 +788,31 @@ export const deleteQuizSession = async (userId: string, examName: string, quizTy
 };
 
 /**
- * Save user badges to Firebase (in userProfile)
- */
-export const saveBadges = async (userId: string, badges: string[]): Promise<void> => {
-  try {
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, {
-      badges: badges,
-      badgesUpdated: serverTimestamp(),
-    });
-  } catch (error) {
-    console.error("Error saving badges:", error);
-  }
-};
-
-/**
  * Get user badges from Firebase
  */
 export const getUserBadges = async (userId: string): Promise<string[]> => {
   try {
     const profile = await getUserProfile(userId);
-    return profile?.badges || [];
+    return profile?.earnedBadges || [];
   } catch (error) {
     console.error("Error getting badges:", error);
     return [];
+  }
+};
+
+/**
+ * Save earned badges to Firebase
+ */
+export const saveBadges = async (userId: string, badgeIds: string[]): Promise<void> => {
+  try {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      earnedBadges: badgeIds,
+    });
+    console.log(`Badges saved to Firebase: ${badgeIds.length} badges`);
+  } catch (error) {
+    console.error("Error saving badges:", error);
+    throw error;
   }
 };
 

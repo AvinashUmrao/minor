@@ -1,5 +1,7 @@
 import { UserProgress, QuizAttempt, LeaderboardEntry } from '@/types/userProgress';
 import { getUserProfile, getUserQuizHistory } from './firebaseUserService';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 const STORAGE_KEYS = {
   USER_PROGRESS: 'user_progress_',
@@ -15,7 +17,7 @@ export const initializeUserProgress = (userId: string, userName: string, email: 
     userId,
     userName,
     email,
-    activeDays: 1,
+    activeDays: 1, // Count first login
     lastActiveDate: new Date().toISOString().split('T')[0],
     firstActiveDate: new Date().toISOString().split('T')[0],
     totalQuizzesTaken: 0,
@@ -26,8 +28,8 @@ export const initializeUserProgress = (userId: string, userName: string, email: 
     highestRating: 1200,
     lowestRating: 1200,
     categoryPerformance: {},
-    currentStreak: 1,
-    longestStreak: 1,
+    currentStreak: 0, // No streak until first quiz
+    longestStreak: 0,
     badges: ['🎓 Beginner'],
     lastUpdated: new Date().toISOString(),
   };
@@ -54,8 +56,8 @@ export const getUserProgress = async (userId: string): Promise<UserProgress | nu
       userId,
       userName: profile.name || 'User',
       email: profile.email,
-      activeDays: profile.totalQuizzes, // Approximation
-      lastActiveDate: profile.lastActive?.toDate?.()?.toISOString()?.split('T')[0] || new Date().toISOString().split('T')[0],
+      activeDays: profile.activeDays || 1, // Use actual activeDays from Firebase
+      lastActiveDate: profile.lastActiveDate || profile.lastActive?.toDate?.()?.toISOString()?.split('T')[0] || new Date().toISOString().split('T')[0],
       firstActiveDate: profile.createdAt?.toDate?.()?.toISOString()?.split('T')[0] || new Date().toISOString().split('T')[0],
       totalQuizzesTaken: profile.totalQuizzes,
       totalQuestionsAttempted: profile.totalQuestionsAttempted,
@@ -64,9 +66,9 @@ export const getUserProgress = async (userId: string): Promise<UserProgress | nu
       currentRating: profile.currentRating,
       highestRating: profile.peakRating,
       lowestRating: Math.min(profile.currentRating, 800), // Conservative estimate
-      categoryPerformance: profile.subjectPerformance || {},
-      currentStreak: 0, // Will be fetched separately
-      longestStreak: 0, // Will be fetched separately
+      categoryPerformance: profile.subjectPerformance as any || {}, // Type mismatch between Firebase and localStorage
+      currentStreak: profile.currentStreak || 0, // Fetch from Firebase
+      longestStreak: profile.longestStreak || 0, // Fetch from Firebase
       badges: [],
       lastUpdated: new Date().toISOString(),
     };
@@ -108,45 +110,165 @@ export const saveUserProgress = (progress: UserProgress): void => {
 };
 
 /**
- * Update active days and streak
+ * Update active days (called on login/page visit)
+ * Active days = days user logged in, regardless of quiz activity
  */
-export const updateActiveDays = (userId: string): UserProgress | null => {
-  const progress = getUserProgress(userId);
-  if (!progress) return null;
+/**
+ * Update active days (called on every login)
+ * Tracks unique login days in both Firebase and localStorage
+ */
+export const updateActiveDays = async (userId: string): Promise<UserProgress | null> => {
+  try {
+    // Get Firebase profile first (source of truth)
+    const profile = await getUserProfile(userId);
+    if (!profile) {
+      console.error('User profile not found');
+      return null;
+    }
 
-  const today = new Date().toISOString().split('T')[0];
-  const lastActive = new Date(progress.lastActiveDate);
-  const todayDate = new Date(today);
-  
-  // Check if user was active today already
-  if (progress.lastActiveDate === today) {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Check if user was already active today
+    if (profile.lastActiveDate === today) {
+      console.log('User already logged in today, activeDays unchanged');
+      return await getUserProgress(userId);
+    }
+
+    // New day - increment active days in Firebase
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      activeDays: (profile.activeDays || 0) + 1,
+      lastActiveDate: today,
+      lastActive: new Date(),
+    });
+
+    console.log(`Active days incremented: ${profile.activeDays || 0} -> ${(profile.activeDays || 0) + 1}`);
+
+    // Also update localStorage for consistency
+    const progress = await getUserProgress(userId);
+    if (progress) {
+      progress.activeDays = (profile.activeDays || 0) + 1;
+      progress.lastActiveDate = today;
+      progress.lastUpdated = new Date().toISOString();
+      saveUserProgress(progress);
+    }
+
     return progress;
+  } catch (error) {
+    console.error('Error updating active days:', error);
+    return null;
   }
-
-  // Calculate day difference
-  const dayDiff = Math.floor((todayDate.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (dayDiff === 1) {
-    // Consecutive day - increase streak
-    progress.currentStreak += 1;
-    progress.longestStreak = Math.max(progress.longestStreak, progress.currentStreak);
-  } else if (dayDiff > 1) {
-    // Streak broken
-    progress.currentStreak = 1;
-  }
-
-  progress.activeDays += 1;
-  progress.lastActiveDate = today;
-  progress.lastUpdated = new Date().toISOString();
-
-  saveUserProgress(progress);
-  return progress;
 };
 
 /**
- * Record activity for calendar
+ * Update quiz streak (called only when user completes a quiz)
+ * Streak = consecutive days with at least one quiz completed
+ * Updates Firebase as source of truth
  */
-export const recordActivity = (userId: string): void => {
+export const updateQuizStreak = async (userId: string): Promise<UserProgress | null> => {
+  try {
+    // Get Firebase profile (source of truth)
+    const profile = await getUserProfile(userId);
+    if (!profile) {
+      console.error('User profile not found for streak update');
+      return null;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const lastQuizDate = profile.lastQuizDate || '';
+    
+    // If already gave quiz today, don't update streak again
+    if (lastQuizDate === today) {
+      console.log('Already completed quiz today, streak unchanged');
+      return await getUserProgress(userId);
+    }
+
+    let newStreak = profile.currentStreak || 0;
+    let newLongest = profile.longestStreak || 0;
+
+    // Calculate day difference
+    if (!lastQuizDate) {
+      // First quiz ever
+      newStreak = 1;
+      newLongest = 1;
+      console.log('First quiz completed, streak started: 1');
+    } else {
+      const lastQuizDateObj = new Date(lastQuizDate);
+      const todayDateObj = new Date(today);
+      const dayDiff = Math.floor((todayDateObj.getTime() - lastQuizDateObj.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (dayDiff === 1) {
+        // Consecutive day - increase streak
+        newStreak = (profile.currentStreak || 0) + 1;
+        newLongest = Math.max(profile.longestStreak || 0, newStreak);
+        console.log(`Consecutive quiz day! Streak: ${profile.currentStreak} -> ${newStreak}`);
+      } else if (dayDiff === 0) {
+        // Same day - shouldn't happen due to check above
+        console.log('Same day quiz (skipped by earlier check)');
+        return await getUserProgress(userId);
+      } else {
+        // Streak broken - reset to 1
+        newStreak = 1;
+        console.log(`Streak broken (${dayDiff} days gap). Reset to 1`);
+      }
+    }
+
+    // Update Firebase
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      currentStreak: newStreak,
+      longestStreak: newLongest,
+      lastQuizDate: today,
+    });
+
+    console.log(`Streak saved to Firebase - Current: ${newStreak}, Longest: ${newLongest}`);
+
+    // Also update localStorage for local tracking
+    setLastStreakDate(userId, today);
+
+    // Update localStorage progress
+    const progress = await getUserProgress(userId);
+    if (progress) {
+      progress.currentStreak = newStreak;
+      progress.longestStreak = newLongest;
+      progress.lastUpdated = new Date().toISOString();
+      saveUserProgress(progress);
+    }
+
+    return progress;
+  } catch (error) {
+    console.error('Error updating quiz streak:', error);
+    return null;
+  }
+};
+
+/**
+ * Get last date user gave a quiz (for streak calculation)
+ */
+const getLastStreakDate = (userId: string): string | null => {
+  try {
+    return localStorage.getItem(`last_streak_date_${userId}`);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Save last date user gave a quiz
+ */
+const setLastStreakDate = (userId: string, date: string): void => {
+  try {
+    localStorage.setItem(`last_streak_date_${userId}`, date);
+  } catch (error) {
+    console.error('Error saving streak date:', error);
+  }
+};
+
+/**
+ * Record activity for calendar (called when quiz is completed)
+ * This makes the calendar show green for quiz days
+ */
+export const recordQuizActivity = (userId: string): void => {
   const today = new Date().toISOString().split('T')[0];
   const key = `activity_calendar_${userId}`;
   
@@ -154,12 +276,12 @@ export const recordActivity = (userId: string): void => {
     const data = localStorage.getItem(key);
     const calendar: { [date: string]: number } = data ? JSON.parse(data) : {};
     
-    // Increment activity count for today
+    // Increment quiz count for today
     calendar[today] = (calendar[today] || 0) + 1;
     
     localStorage.setItem(key, JSON.stringify(calendar));
   } catch (error) {
-    console.error('Error recording activity:', error);
+    console.error('Error recording quiz activity:', error);
   }
 };
 
@@ -251,8 +373,11 @@ export const recordQuizAttempt = (
     // Award badges
     awardBadges(progress);
 
-    // Record activity for calendar
-    recordActivity(userId);
+    // Record quiz activity for calendar (makes day green)
+    recordQuizActivity(userId);
+    
+    // Update quiz streak (consecutive quiz days)
+    updateQuizStreak(userId);
 
     progress.lastUpdated = new Date().toISOString();
     saveUserProgress(progress);

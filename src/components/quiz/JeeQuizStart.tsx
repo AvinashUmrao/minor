@@ -13,10 +13,9 @@ import { getStreakData, getEarnedBadges } from "@/lib/gamification";
 
 interface JeeQuizStartProps {
   onStart: (quizType: 'topic' | 'subject' | 'full', duration: number, subject?: string, topic?: string) => void;
-  onStartCalibration?: (duration: number, subject: string) => void;
 }
 
-export const JeeQuizStart = ({ onStart, onStartCalibration }: JeeQuizStartProps) => {
+export const JeeQuizStart = ({ onStart }: JeeQuizStartProps) => {
   const [selectedType, setSelectedType] = useState<'topic' | 'subject' | 'full'>('full');
   const [duration, setDuration] = useState(15);
   const [selectedSubject, setSelectedSubject] = useState<string>('physics');
@@ -86,10 +85,6 @@ export const JeeQuizStart = ({ onStart, onStartCalibration }: JeeQuizStartProps)
     } else {
       onStart(selectedType, duration, selectedSubject);
     }
-  };
-
-  const handleCalibration = () => {
-    onStartCalibration?.(duration, selectedSubject);
   };
   
   const getCategoryColor = (cat: string) => {
@@ -249,11 +244,6 @@ export const JeeQuizStart = ({ onStart, onStartCalibration }: JeeQuizStartProps)
               <Button onClick={handleStart} size="lg" className="flex-1">
                 Start Adaptive Quiz
               </Button>
-              {onStartCalibration && (selectedType === 'subject' || selectedType === 'topic') && (
-                <Button onClick={handleCalibration} variant="outline" size="lg">
-                  Take Initial Level Test
-                </Button>
-              )}
             </div>
           </CardContent>
         </Card>

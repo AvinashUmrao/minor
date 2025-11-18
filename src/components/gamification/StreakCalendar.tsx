@@ -309,10 +309,10 @@ export const StreakCalendar = ({
                 <Flame className="w-5 h-5 text-orange-500" />
                 <div>
                   <p className="font-semibold text-sm">
-                    {currentStreak} day streak! 🔥
+                    {currentStreak} day quiz streak! 🔥
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Keep it going! Complete an activity today to maintain your streak.
+                    Keep it going! Complete a quiz today to maintain your streak.
                   </p>
                 </div>
               </div>
@@ -324,9 +324,9 @@ export const StreakCalendar = ({
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-500" />
                 <div>
-                  <p className="font-semibold text-sm">Start your streak today!</p>
+                  <p className="font-semibold text-sm">Start your quiz streak today!</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Complete a quiz or study session to begin building your streak.
+                    Complete a quiz today to begin building your streak. Green squares show quiz activity days.
                   </p>
                 </div>
               </div>

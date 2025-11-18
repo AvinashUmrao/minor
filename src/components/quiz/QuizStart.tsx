@@ -65,24 +65,27 @@ export const QuizStart = ({
   
   // Check if user needs initial test based on real quiz data
   useEffect(() => {
-    if (user) {
-      const progress = getUserProgress(user.id);
-      const hasQuizzes = progress && progress.totalQuizzesTaken > 0;
-      setNeedsInitialTest(!hasQuizzes);
-      
-      // Set recommended difficulty based on rating if user has taken quizzes
-      if (hasQuizzes && progress) {
-        const rating = progress.currentRating;
-        // Calculate difficulty mix based on rating
-        if (rating < 1300) {
-          setRecommendedDifficulty({ easy: 0.6, medium: 0.3, hard: 0.1 });
-        } else if (rating < 1600) {
-          setRecommendedDifficulty({ easy: 0.3, medium: 0.5, hard: 0.2 });
-        } else {
-          setRecommendedDifficulty({ easy: 0.1, medium: 0.3, hard: 0.6 });
+    const checkQuizStatus = async () => {
+      if (user) {
+        const progress = await getUserProgress(user.id);
+        const hasQuizzes = progress && progress.totalQuizzesTaken > 0;
+        setNeedsInitialTest(!hasQuizzes);
+        
+        // Set recommended difficulty based on rating if user has taken quizzes
+        if (hasQuizzes && progress) {
+          const rating = progress.currentRating;
+          // Calculate difficulty mix based on rating
+          if (rating < 1300) {
+            setRecommendedDifficulty({ easy: 0.6, medium: 0.3, hard: 0.1 });
+          } else if (rating < 1600) {
+            setRecommendedDifficulty({ easy: 0.3, medium: 0.5, hard: 0.2 });
+          } else {
+            setRecommendedDifficulty({ easy: 0.1, medium: 0.3, hard: 0.6 });
+          }
         }
       }
-    }
+    };
+    checkQuizStatus();
   }, [user]);
 
   const quizTypes = [
@@ -385,7 +388,7 @@ export const QuizStart = ({
             <div className="text-center space-y-4">
               <Button onClick={handleStart} size="lg" variant="hero" className="w-full">
                 <Brain className="mr-2 h-5 w-5" />
-                {needsInitialTest ? 'Start First Quiz' : 'Start Quiz'}
+                {needsInitialTest ? 'Take Initial Quiz' : 'Start Adaptive Quiz'}
               </Button>
               
               <Link to="/gate">

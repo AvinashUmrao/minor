@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { QuizStart } from "@/components/quiz/QuizStart";
 import { QuizTaking } from "@/components/quiz/QuizTaking";
 import { QuizResults } from "@/components/quiz/QuizResults";
@@ -23,12 +23,28 @@ const GateQuiz = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { quizState, startQuiz, startQuizWithQuestions, selectAnswer, nextQuestion, previousQuestion, submitQuiz, resetQuiz } = useQuiz();
-  const { saveQuizResult, getRecommendedDifficulty } = useFirebaseQuiz();
+  const { getRecommendedDifficulty } = useFirebaseQuiz(); // Only use for difficulty recommendation
+  const hasProcessedQuiz = useRef(false); // Track if current quiz has been processed
 
   const stage: QuizStage = !quizState ? 'start' : quizState.isCompleted ? 'results' : 'taking';
+  
+  // Reset processing flag when quiz is reset or new quiz starts
+  useEffect(() => {
+    if (!quizState || !quizState.isCompleted) {
+      hasProcessedQuiz.current = false;
+    }
+  }, [quizState?.isCompleted]);
 
   useEffect(() => {
     if (quizState?.isCompleted && quizState.questions?.length) {
+      // Prevent double execution for the same quiz
+      if (hasProcessedQuiz.current) {
+        console.log('Quiz already processed, skipping duplicate execution');
+        return;
+      }
+      
+      hasProcessedQuiz.current = true;
+      
       (async () => {
         const questionsAny = quizState.questions as any;
         const perf = analyzePerformance(questionsAny, quizState.answers.map(a => ({ selectedAnswer: a.selectedAnswer, timeTakenSec: a.timeTakenSec })));
@@ -85,58 +101,12 @@ const GateQuiz = () => {
           totalTime
         );
         
-        // Check badge progress in new system
-        const newStreak = getUserStreak();
-        const newRating = getUserRating();
-        checkNewBadges({
-          streak: newStreak,
-          rating: newRating
-        });
-        
-        // SAVE TO FIREBASE if user is authenticated
-        if (user) {
-          try {
-            const difficultyLevel = quizState.mode === 'calibration' ? 'mixed' : 
-              (perf.correct / perf.total) >= 0.8 ? 'hard' : 
-              (perf.correct / perf.total) >= 0.5 ? 'medium' : 'easy';
-            
-            const result = await saveQuizResult({
-              examType: 'gate',
-              subject: subject || 'general',
-              quizType: quizState.quizType,
-              score: perf.correct,
-              totalQuestions: perf.total,
-              difficulty: difficultyLevel as any,
-              timeTaken: totalTime,
-              answers: quizState.answers.map((ans, idx) => ({
-                questionId: idx,
-                selectedAnswer: ans.selectedAnswer,
-                correctAnswer: questionsAny[idx].correctAnswer,
-                isCorrect: ans.selectedAnswer === questionsAny[idx].correctAnswer,
-                timeTaken: ans.timeTakenSec || 0,
-                difficulty: questionsAny[idx].difficulty,
-              })),
-            });
-            
-            if (result) {
-              // Rating toast disabled - no popup during quiz
-              // toast({
-              //   title: "Quiz Saved!",
-              //   description: `Category: ${result.category} | Rating: ${result.newRating} (${result.ratingChange > 0 ? '+' : ''}${result.ratingChange})`,
-              // });
-            }
-          } catch (error) {
-            console.error('Error saving to Firebase:', error);
-            toast({
-              title: "Save Failed",
-              description: "Could not save quiz to database. Your local progress is still saved.",
-              variant: "destructive",
-            });
-          }
-        }
+        // Note: Badge checking is handled by QuizContext after quiz completion
+        // Firebase save is also handled by QuizContext to prevent duplication
+        // across all quiz pages (GateQuiz, JeeQuiz, etc.)
       })();
     }
-  }, [quizState?.isCompleted, user, saveQuizResult, toast]);
+  }, [quizState?.isCompleted, user, toast]);
 
   const handleStart = async (quizType: 'topic' | 'subject' | 'full', duration: number, subject?: string, topic?: string) => {
     let questionPool;

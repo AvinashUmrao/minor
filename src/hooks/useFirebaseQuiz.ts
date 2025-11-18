@@ -133,8 +133,8 @@ export const useFirebaseQuiz = () => {
         longest: streakData.longestStreak,
       });
 
-      // Update badges in Firebase
-      const badgeStats = getBadgeStats();
+      // Update badges in Firebase (pass userId for user-specific data)
+      const badgeStats = getBadgeStats(user.id);
       await updateUserBadges(user.id, badgeStats.earned);
 
       // Refresh quiz history

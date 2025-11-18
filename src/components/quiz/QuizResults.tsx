@@ -8,7 +8,6 @@ import { Progress } from "@/components/ui/progress";
 import { useQuiz } from "@/contexts/QuizContext";
 import { analyzePerformance, topicStrengths, calibrationAssignment, getCategory, getRating } from "@/lib/adaptive";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { useToast } from "@/hooks/use-toast";
 
 interface Answer {
   questionId: number;
@@ -24,7 +23,6 @@ interface QuizResultsProps {
 
 export const QuizResults = ({ answers, onRestart }: QuizResultsProps) => {
   const { quizState } = useQuiz();
-  const { toast } = useToast();
   const questions = quizState?.questions || [];
   const [previousRating] = useState(() => getRating('gate', quizState?.subject));
   
@@ -72,19 +70,7 @@ export const QuizResults = ({ answers, onRestart }: QuizResultsProps) => {
   const currentCategory = getCategory('gate', quizState?.subject);
   const currentRating = getRating('gate', quizState?.subject);
 
-  // Show rating change notification
-  useEffect(() => {
-    if (!isCalibration && currentRating !== previousRating) {
-      const ratingChange = currentRating - previousRating;
-      const changeText = ratingChange > 0 ? `+${ratingChange}` : `${ratingChange}`;
-      
-      toast({
-        title: "Rating Updated! 📊",
-        description: `Your rating changed from ${previousRating} to ${currentRating} (${changeText})`,
-        duration: 3000,
-      });
-    }
-  }, [currentRating, previousRating, isCalibration, toast]);
+  // Rating change notification removed - user requested to remove this toast
   
   const getCategoryColor = (cat: string) => {
     if (cat === 'Best') return 'bg-success/10 text-success border-success';

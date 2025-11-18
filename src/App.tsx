@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { QuizProvider } from "@/contexts/QuizContext";
 import { ColorThemeProvider } from "@/contexts/ThemeContext";
+import { BadgeNotificationHandler } from "@/components/gamification/BadgeNotificationHandler";
 import Navbar from "@/components/ui/navbar";
 import { Footer } from "@/components/layout/Footer";
 import Home from "./pages/Home";
@@ -47,6 +48,7 @@ const App = () => (
             >
               <div className="flex flex-col min-h-screen">
                 <Navbar />
+                <BadgeNotificationHandler />
                 <main className="flex-1">
                   <Routes>
                     <Route path="/" element={<Home />} />

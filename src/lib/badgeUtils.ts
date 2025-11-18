@@ -6,44 +6,87 @@ import { useAuth } from "@/contexts/AuthContext";
 const BADGES_STORAGE_KEY = "learnwise_user_badges";
 
 /**
- * Get user's badges from Firebase (with localStorage fallback)
+ * Get user-specific localStorage key for badges
  */
-export const getUserBadges = async (userId?: string): Promise<UserBadge[]> => {
+const getUserBadgeKey = (userId: string): string => {
+  return `${BADGES_STORAGE_KEY}_${userId}`;
+};
+
+/**
+ * Clean up old shared localStorage badge data (migration helper)
+ * This should be called once per user on login to migrate from shared to user-specific storage
+ */
+export const cleanupOldBadgeStorage = (): void => {
+  try {
+    // Remove the old shared localStorage key if it exists
+    if (localStorage.getItem(BADGES_STORAGE_KEY)) {
+      console.log('Removing old shared badge storage...');
+      localStorage.removeItem(BADGES_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.error('Error cleaning up old badge storage:', error);
+  }
+};
+
+/**
+ * Get user's badges from Firebase (with user-specific localStorage cache)
+ * Each user now has their own localStorage key to prevent cross-contamination
+ */
+export const getUserBadges = async (userId?: string): Promise<string[]> => {
   try {
     // Try Firebase first
     if (userId) {
       const firebaseBadges = await getFirebaseBadges(userId);
       if (firebaseBadges && firebaseBadges.length > 0) {
-        return firebaseBadges.map(id => ({
-          badgeId: id,
-          isUnlocked: true,
-          earnedAt: new Date().toISOString(),
-          progress: 100,
-        }));
+        // Cache in user-specific localStorage
+        try {
+          const userBadges: UserBadge[] = firebaseBadges.map(id => ({
+            badgeId: id,
+            earnedAt: new Date().toISOString(),
+            progress: 100,
+            isUnlocked: true,
+          }));
+          localStorage.setItem(getUserBadgeKey(userId), JSON.stringify(userBadges));
+        } catch (e) {
+          console.error("Error caching badges to localStorage:", e);
+        }
+        return firebaseBadges;
       }
     }
   } catch (error) {
     console.error("Error fetching badges from Firebase:", error);
   }
   
-  // Fall back to localStorage
-  try {
-    const stored = localStorage.getItem(BADGES_STORAGE_KEY);
-    if (!stored) return [];
-    return JSON.parse(stored);
-  } catch (error) {
-    console.error("Error reading badges from localStorage:", error);
-    return [];
+  // Fall back to user-specific localStorage
+  if (userId) {
+    try {
+      const stored = localStorage.getItem(getUserBadgeKey(userId));
+      if (!stored) return [];
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        // Convert UserBadge[] to string[]
+        return parsed.filter(b => b.isUnlocked).map(b => b.badgeId);
+      }
+      return [];
+    } catch (error) {
+      console.error("Error reading badges from localStorage:", error);
+      return [];
+    }
   }
+  
+  return [];
 };
 
 /**
- * Synchronous getter that reads badges from localStorage.
+ * Synchronous getter that reads badges from user-specific localStorage.
  * Use this in places where synchronous array access is expected.
+ * Requires userId parameter to ensure user-specific data.
  */
-export const getUserBadgesSync = (): UserBadge[] => {
+export const getUserBadgesSync = (userId?: string): UserBadge[] => {
+  if (!userId) return [];
+  
   try {
-    const stored = localStorage.getItem(BADGES_STORAGE_KEY);
+    const stored = localStorage.getItem(getUserBadgeKey(userId));
     if (!stored) return [];
     const parsed = JSON.parse(stored);
     return Array.isArray(parsed) ? parsed : [];
@@ -54,14 +97,16 @@ export const getUserBadgesSync = (): UserBadge[] => {
 };
 
 /**
- * Save user's badges to Firebase (and localStorage for offline)
+ * Save user's badges to Firebase (and user-specific localStorage for offline)
  */
 export const saveUserBadges = async (badges: UserBadge[], userId?: string): Promise<void> => {
-  // Save to localStorage for offline
-  try {
-    localStorage.setItem(BADGES_STORAGE_KEY, JSON.stringify(badges));
-  } catch (error) {
-    console.error("Error saving badges to localStorage:", error);
+  // Save to user-specific localStorage for offline
+  if (userId) {
+    try {
+      localStorage.setItem(getUserBadgeKey(userId), JSON.stringify(badges));
+    } catch (error) {
+      console.error("Error saving badges to localStorage:", error);
+    }
   }
   
   // Save to Firebase
@@ -78,18 +123,21 @@ export const saveUserBadges = async (badges: UserBadge[], userId?: string): Prom
 /**
  * Check if user has earned a badge
  */
-export const hasBadge = (badgeId: string): boolean => {
-  const userBadges = getUserBadgesSync();
+export const hasBadge = (badgeId: string, userId?: string): boolean => {
+  if (!userId) return false;
+  const userBadges = getUserBadgesSync(userId);
   return userBadges.some((b) => b.badgeId === badgeId && b.isUnlocked);
 };
 
 /**
  * Award a badge to the user
  */
-export const awardBadge = (badgeId: string): boolean => {
-  if (hasBadge(badgeId)) return false;
+export const awardBadge = (badgeId: string, userId?: string): boolean => {
+  if (!userId) return false;
+  
+  if (hasBadge(badgeId, userId)) return false;
 
-  const userBadges = getUserBadgesSync();
+  const userBadges = getUserBadgesSync(userId);
   const existingBadge = userBadges.find((b) => b.badgeId === badgeId);
 
   if (existingBadge) {
@@ -105,15 +153,17 @@ export const awardBadge = (badgeId: string): boolean => {
     });
   }
 
-  saveUserBadges(userBadges);
+  saveUserBadges(userBadges, userId);
   return true;
 };
 
 /**
  * Update badge progress
  */
-export const updateBadgeProgress = (badgeId: string, progress: number): void => {
-  const userBadges = getUserBadgesSync();
+export const updateBadgeProgress = (badgeId: string, progress: number, userId?: string): void => {
+  if (!userId) return;
+  
+  const userBadges = getUserBadgesSync(userId);
   const badge = getBadgeById(badgeId);
   if (!badge) return;
 
@@ -135,14 +185,24 @@ export const updateBadgeProgress = (badgeId: string, progress: number): void => 
     });
   }
 
-  saveUserBadges(userBadges);
+  saveUserBadges(userBadges, userId);
 };
 
 /**
- * Get all badge progress (earned + in progress)
+ * Get all badge progress (earned + in progress) for a specific user
  */
-export const getAllBadgeProgress = (): BadgeProgress[] => {
-  const userBadges = getUserBadgesSync();
+export const getAllBadgeProgress = (userId?: string): BadgeProgress[] => {
+  if (!userId) {
+    // Return all badges as locked if no user
+    return BADGES.map((badge) => ({
+      badge,
+      progress: 0,
+      isUnlocked: false,
+      earnedAt: undefined,
+    }));
+  }
+  
+  const userBadges = getUserBadgesSync(userId);
 
   return BADGES.map((badge) => {
     const userBadge = userBadges.find((ub) => ub.badgeId === badge.id);
@@ -157,136 +217,119 @@ export const getAllBadgeProgress = (): BadgeProgress[] => {
 };
 
 /**
- * Get earned badges
+ * Get earned badges for a specific user
  */
-export const getEarnedBadges = (): BadgeProgress[] => {
-  return getAllBadgeProgress().filter((bp) => bp.isUnlocked);
+export const getEarnedBadges = (userId?: string): BadgeProgress[] => {
+  return getAllBadgeProgress(userId).filter((bp) => bp.isUnlocked);
 };
 
 /**
- * Get badges in progress
+ * Get badges in progress for a specific user
  */
-export const getBadgesInProgress = (): BadgeProgress[] => {
-  return getAllBadgeProgress().filter((bp) => !bp.isUnlocked && bp.progress > 0);
+export const getBadgesInProgress = (userId?: string): BadgeProgress[] => {
+  return getAllBadgeProgress(userId).filter((bp) => !bp.isUnlocked && bp.progress > 0);
 };
 
 /**
- * Get locked badges
+ * Get locked badges for a specific user
  */
-export const getLockedBadges = (): BadgeProgress[] => {
-  return getAllBadgeProgress().filter((bp) => !bp.isUnlocked && bp.progress === 0);
+export const getLockedBadges = (userId?: string): BadgeProgress[] => {
+  return getAllBadgeProgress(userId).filter((bp) => !bp.isUnlocked && bp.progress === 0);
 };
 
 /**
  * Check and award badges based on user activity
+ * Returns newly earned badge IDs
  */
-export const checkAndAwardBadges = (userProgress: Partial<UserProgress>): string[] => {
+export const checkAndAwardBadges = async (
+  userId: string,
+  userStats: {
+    totalQuizzes: number;
+    currentStreak: number;
+    currentRating: number;
+    lastQuizAccuracy?: number;
+  }
+): Promise<string[]> => {
   const newlyEarnedBadges: string[] = [];
+  const currentBadges = await getUserBadges(userId);
+
+  const hasBadgeAlready = (badgeId: string) => currentBadges.includes(badgeId);
 
   // Check quiz completion badges
-  if (userProgress.stats?.totalQuizzes) {
-    const quizCount = userProgress.stats.totalQuizzes;
+  const quizCount = userStats.totalQuizzes;
 
-    if (quizCount >= 1 && !hasBadge("first_quiz")) {
-      awardBadge("first_quiz");
-      newlyEarnedBadges.push("first_quiz");
-    }
-    if (quizCount >= 10 && !hasBadge("quiz_10")) {
-      awardBadge("quiz_10");
-      newlyEarnedBadges.push("quiz_10");
-    }
-    if (quizCount >= 50 && !hasBadge("quiz_50")) {
-      awardBadge("quiz_50");
-      newlyEarnedBadges.push("quiz_50");
-    }
-    if (quizCount >= 100 && !hasBadge("quiz_100")) {
-      awardBadge("quiz_100");
-      newlyEarnedBadges.push("quiz_100");
-    }
-
-    // Update progress for next milestone
-    updateBadgeProgress("first_quiz", quizCount);
-    updateBadgeProgress("quiz_10", quizCount);
-    updateBadgeProgress("quiz_50", quizCount);
-    updateBadgeProgress("quiz_100", quizCount);
+  if (quizCount >= 1 && !hasBadgeAlready("first_quiz")) {
+    newlyEarnedBadges.push("first_quiz");
+  }
+  if (quizCount >= 10 && !hasBadgeAlready("quiz_10")) {
+    newlyEarnedBadges.push("quiz_10");
+  }
+  if (quizCount >= 50 && !hasBadgeAlready("quiz_50")) {
+    newlyEarnedBadges.push("quiz_50");
+  }
+  if (quizCount >= 100 && !hasBadgeAlready("quiz_100")) {
+    newlyEarnedBadges.push("quiz_100");
   }
 
   // Check streak badges
-  if (userProgress.streak?.currentStreak) {
-    const streak = userProgress.streak.currentStreak;
+  const streak = userStats.currentStreak;
 
-    if (streak >= 7 && !hasBadge("week_warrior")) {
-      awardBadge("week_warrior");
-      newlyEarnedBadges.push("week_warrior");
-    }
-    if (streak >= 30 && !hasBadge("month_master")) {
-      awardBadge("month_master");
-      newlyEarnedBadges.push("month_master");
-    }
-    if (streak >= 365 && !hasBadge("year_champion")) {
-      awardBadge("year_champion");
-      newlyEarnedBadges.push("year_champion");
-    }
-
-    updateBadgeProgress("week_warrior", streak);
-    updateBadgeProgress("month_master", streak);
-    updateBadgeProgress("year_champion", streak);
+  if (streak >= 7 && !hasBadgeAlready("week_warrior")) {
+    newlyEarnedBadges.push("week_warrior");
+  }
+  if (streak >= 30 && !hasBadgeAlready("month_master")) {
+    newlyEarnedBadges.push("month_master");
+  }
+  if (streak >= 365 && !hasBadgeAlready("year_champion")) {
+    newlyEarnedBadges.push("year_champion");
   }
 
   // Check rating badges
-  if (userProgress.rating?.current) {
-    const rating = userProgress.rating.current;
+  const rating = userStats.currentRating;
 
-    if (rating >= 1000 && !hasBadge("rating_1000")) {
-      awardBadge("rating_1000");
-      newlyEarnedBadges.push("rating_1000");
-    }
-    if (rating >= 1500 && !hasBadge("rating_1500")) {
-      awardBadge("rating_1500");
-      newlyEarnedBadges.push("rating_1500");
-    }
-    if (rating >= 2000 && !hasBadge("rating_2000")) {
-      awardBadge("rating_2000");
-      newlyEarnedBadges.push("rating_2000");
-    }
-    if (rating >= 2500 && !hasBadge("rating_2500")) {
-      awardBadge("rating_2500");
-      newlyEarnedBadges.push("rating_2500");
-    }
-
-    updateBadgeProgress("rating_1000", rating);
-    updateBadgeProgress("rating_1500", rating);
-    updateBadgeProgress("rating_2000", rating);
-    updateBadgeProgress("rating_2500", rating);
+  if (rating >= 1000 && !hasBadgeAlready("rating_1000")) {
+    newlyEarnedBadges.push("rating_1000");
+  }
+  if (rating >= 1500 && !hasBadgeAlready("rating_1500")) {
+    newlyEarnedBadges.push("rating_1500");
+  }
+  if (rating >= 2000 && !hasBadgeAlready("rating_2000")) {
+    newlyEarnedBadges.push("rating_2000");
+  }
+  if (rating >= 2500 && !hasBadgeAlready("rating_2500")) {
+    newlyEarnedBadges.push("rating_2500");
   }
 
-  // Check blog badges
-  if (userProgress.stats?.totalBlogsRead) {
-    const blogsRead = userProgress.stats.totalBlogsRead;
-    if (blogsRead >= 10 && !hasBadge("blog_reader")) {
-      awardBadge("blog_reader");
-      newlyEarnedBadges.push("blog_reader");
-    }
-    updateBadgeProgress("blog_reader", blogsRead);
+  // Check perfect score badge
+  if (userStats.lastQuizAccuracy === 100 && !hasBadgeAlready("perfect_score")) {
+    newlyEarnedBadges.push("perfect_score");
   }
 
-  if (userProgress.stats?.totalBlogsCreated) {
-    const blogsCreated = userProgress.stats.totalBlogsCreated;
-    if (blogsCreated >= 5 && !hasBadge("content_creator")) {
-      awardBadge("content_creator");
-      newlyEarnedBadges.push("content_creator");
-    }
-    updateBadgeProgress("content_creator", blogsCreated);
+  // Save newly earned badges
+  if (newlyEarnedBadges.length > 0) {
+    const allBadges = [...currentBadges, ...newlyEarnedBadges];
+    await saveBadges(userId, allBadges);
+    
+    // Also save to user-specific localStorage as UserBadge[]
+    const userBadges: UserBadge[] = allBadges.map(id => ({
+      badgeId: id,
+      earnedAt: new Date().toISOString(),
+      progress: 100,
+      isUnlocked: true,
+    }));
+    localStorage.setItem(getUserBadgeKey(userId), JSON.stringify(userBadges));
+    
+    console.log(`🎉 Newly earned badges for user ${userId}:`, newlyEarnedBadges);
   }
 
   return newlyEarnedBadges;
 };
 
 /**
- * Get badge statistics
+ * Get badge statistics for a specific user
  */
-export const getBadgeStats = () => {
-  const allProgress = getAllBadgeProgress();
+export const getBadgeStats = (userId?: string) => {
+  const allProgress = getAllBadgeProgress(userId);
   const earned = allProgress.filter((bp) => bp.isUnlocked);
   const inProgress = allProgress.filter((bp) => !bp.isUnlocked && bp.progress > 0);
   const locked = allProgress.filter((bp) => !bp.isUnlocked && bp.progress === 0);

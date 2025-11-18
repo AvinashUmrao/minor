@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, ArrowLeft, ArrowRight, BookOpen, Flag, X } from "lucide-react";
+import { Clock, ArrowLeft, ArrowRight, Flag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,6 @@ export const QuizTaking = ({
   onNext,
   onPrevious
 }: QuizTakingProps) => {
-  const [showExplanation, setShowExplanation] = useState(false);
   const [showQuitDialog, setShowQuitDialog] = useState(false);
   const { quizState, markForReview, resetQuiz } = useQuiz();
   const navigate = useNavigate();
@@ -168,26 +167,7 @@ export const QuizTaking = ({
               })}
             </div>
 
-            {selectedAnswer !== null && (
-              <div className="mt-6 p-4 bg-accent/30 rounded-lg">
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setShowExplanation(!showExplanation)}
-                  className="w-full justify-start"
-                >
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  {showExplanation ? 'Hide Explanation' : 'Show Explanation'}
-                </Button>
-                
-                {showExplanation && (
-                  <div className="mt-4 p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Explanation:</strong> {question.explanation}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Explanation removed - will be shown only in results */}
           </CardContent>
         </Card>
 
