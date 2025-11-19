@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useQuiz } from "@/contexts/QuizContext";
-import { analyzePerformance, topicStrengths, calibrationAssignment, getCategory, getRating } from "@/lib/adaptive";
+import { analyzePerformance, topicStrengths, calibrationAssignment, getCategory, getRating } from "@/hooks/lib/adaptive";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 interface Answer {

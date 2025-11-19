@@ -11,8 +11,8 @@ import { Trophy, Flame, TrendingUp, Download, User, Target, Calendar, BookOpen }
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { generateProgressReportPDF } from "@/lib/progressPdfGenerator";
-import { getUserProgress, getActivityCalendar } from "@/lib/userProgressService";
+import { generateProgressReportPDF } from "@/hooks/lib/progressPdfGenerator";
+import { getUserProgress, getActivityCalendar } from "@/hooks/lib/userProgressService";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProgress } from "@/types/userProgress";
 

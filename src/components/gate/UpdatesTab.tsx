@@ -7,7 +7,7 @@ import {
   getStoredNotifications,
   markAllAsRead,
   getLastCheckTime,
-} from '@/lib/gateNotifications';
+} from '@/hooks/lib/gateNotifications';
 import { GateNotification } from '@/types/gate';
 import {
   Bell,

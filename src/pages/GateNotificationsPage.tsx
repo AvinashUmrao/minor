@@ -9,7 +9,7 @@ import {
   markAllAsRead,
   getLastCheckTime,
   clearNotifications,
-} from '@/lib/gateNotifications';
+} from '@/hooks/lib/gateNotifications';
 import { GateNotification } from '@/types/gate';
 import {
   Bell,

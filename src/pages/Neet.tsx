@@ -21,25 +21,6 @@ const Neet = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-          <Card className="text-center p-6">
-            <div className="text-3xl font-bold text-primary mb-2">250+</div>
-            <div className="text-sm text-muted-foreground">Study Materials</div>
-          </Card>
-          <Card className="text-center p-6">
-            <div className="text-3xl font-bold text-primary mb-2">75K+</div>
-            <div className="text-sm text-muted-foreground">Students</div>
-          </Card>
-          <Card className="text-center p-6">
-            <div className="text-3xl font-bold text-primary mb-2">600+</div>
-            <div className="text-sm text-muted-foreground">Practice Tests</div>
-          </Card>
-          <Card className="text-center p-6">
-            <div className="text-3xl font-bold text-primary mb-2">4.9★</div>
-            <div className="text-sm text-muted-foreground">Rating</div>
-          </Card>
-        </div>
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-8">
             <TabsTrigger value="study-material" className="flex items-center gap-2">

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
-import { getAllBlogs } from "@/lib/blogUtils";
+import { getAllBlogs } from "@/hooks/lib/blogUtils";
 import { Blog } from "@/types/blog";
 
 const blogArticles: Record<number, { title: string; content: string; author: string }> = {

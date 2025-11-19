@@ -16,9 +16,9 @@ import {
   QuizAttempt,
   StudentCategory,
   DifficultyLevel,
-} from "@/lib/firebaseUserService";
-import { getUserStreak } from "@/lib/streakUtils";
-import { getBadgeStats } from "@/lib/badgeUtils";
+} from "@/hooks/lib/firebaseUserService";
+import { getUserStreak } from "@/hooks/lib/streakUtils";
+import { getBadgeStats } from "@/hooks/lib/badgeUtils";
 
 export const useFirebaseQuiz = () => {
   const { user } = useAuth();

@@ -22,26 +22,6 @@ const Jee = () => {
           </p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-          <Card className="text-center p-6">
-            <div className="text-3xl font-bold text-primary mb-2">200+</div>
-            <div className="text-sm text-muted-foreground">Study Materials</div>
-          </Card>
-          <Card className="text-center p-6">
-            <div className="text-3xl font-bold text-primary mb-2">50K+</div>
-            <div className="text-sm text-muted-foreground">Students</div>
-          </Card>
-          <Card className="text-center p-6">
-            <div className="text-3xl font-bold text-primary mb-2">500+</div>
-            <div className="text-sm text-muted-foreground">Practice Tests</div>
-          </Card>
-          <Card className="text-center p-6">
-            <div className="text-3xl font-bold text-primary mb-2">4.8★</div>
-            <div className="text-sm text-muted-foreground">Rating</div>
-          </Card>
-        </div>
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-8">
             <TabsTrigger value="study-material" className="flex items-center gap-2">

@@ -4,16 +4,16 @@ import { QuizTaking } from "@/components/quiz/QuizTaking";
 import { QuizResults } from "@/components/quiz/QuizResults";
 import { QuizNavigation } from "@/components/quiz/QuizNavigation";
 import { useQuiz } from "@/contexts/QuizContext";
-import { buildCalibrationQuiz, buildAdaptiveQuiz, getCategory, getRating, ratingChangeFromPerformance, setRating, analyzePerformance, calibrationAssignment } from "@/lib/adaptive";
+import { buildCalibrationQuiz, buildAdaptiveQuiz, getCategory, getRating, ratingChangeFromPerformance, setRating, analyzePerformance, calibrationAssignment } from "@/hooks/lib/adaptive";
 import { getJeeQuestionsBySubject, getJeeQuestionsByTopic, jeeQuestionBank } from "@/data/jeeQuestionBank";
-import { addQuizAttempt, updateStreak, checkAndAwardBadges, getQuizHistory } from "@/lib/gamification";
-import { recordActivity } from "@/lib/streakUtils";
-import { checkAndAwardBadges as checkNewBadges } from "@/lib/badgeUtils";
-import { updateRatingAfterQuiz } from "@/lib/ratingUtils";
-import { getUserStreak } from "@/lib/streakUtils";
-import { getUserRating } from "@/lib/ratingUtils";
+import { addQuizAttempt, updateStreak, checkAndAwardBadges, getQuizHistory } from "@/hooks/lib/gamification";
+import { recordActivity } from "@/hooks/lib/streakUtils";
+import { checkAndAwardBadges as checkNewBadges } from "@/hooks/lib/badgeUtils";
+import { updateRatingAfterQuiz } from "@/hooks/lib/ratingUtils";
+import { getUserStreak } from "@/hooks/lib/streakUtils";
+import { getUserRating } from "@/hooks/lib/ratingUtils";
 import { useAuth } from "@/contexts/AuthContext";
-import { saveQuizCategory } from "@/lib/firebaseUserService";
+import { saveQuizCategory } from "@/hooks/lib/firebaseUserService";
 
 type QuizStage = 'start' | 'taking' | 'results';
 

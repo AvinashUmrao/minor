@@ -16,9 +16,9 @@ import {
   deleteAssignment,
   saveAnalysis,
   getAnalysisByAssignment,
-} from '@/lib/plagiarismStorage';
-import { detectPlagiarism } from '@/lib/plagiarismDetection';
-import { generatePlagiarismReportPDF } from '@/lib/plagiarismPdfGenerator';
+} from '@/hooks/lib/plagiarismStorage';
+import { detectPlagiarism } from '@/hooks/lib/plagiarismDetection';
+import { generatePlagiarismReportPDF } from '@/hooks/lib/plagiarismPdfGenerator';
 import { FileText, Download, Play, ArrowLeft, Paperclip, Image as ImageIcon } from 'lucide-react';
 
 const TeacherPlagiarismPage = () => {

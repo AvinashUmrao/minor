@@ -9,9 +9,9 @@ import {
   determineCategory,
   calculateRatingChange,
   DifficultyLevel,
-} from '@/lib/firebaseUserService';
-import { saveUserActivity } from '@/lib/firebaseUserService';
-import { checkAndAwardBadges } from '@/lib/badgeUtils';
+} from '@/hooks/lib/firebaseUserService';
+import { saveUserActivity } from '@/hooks/lib/firebaseUserService';
+import { checkAndAwardBadges } from '@/hooks/lib/badgeUtils';
 
 interface QuizAnswer {
   questionId: number;

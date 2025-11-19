@@ -7,14 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getCategory, getRating } from "@/lib/adaptive";
+import { getCategory, getRating } from "@/hooks/lib/adaptive";
 import { subjects as gateSubjects, getTopicsBySubject as gateGetTopicsBySubject } from "@/data/questionBank";
 import { useStreak } from "@/hooks/useStreak";
 import { useBadges } from "@/hooks/useBadges";
 import { useRating } from "@/hooks/useRating";
 import { useFirebaseQuiz } from "@/hooks/useFirebaseQuiz";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserProgress } from "@/lib/userProgressService";
+import { getUserProgress } from "@/hooks/lib/userProgressService";
 
 interface Subject {
   id: string;

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader2 } from "lucide-react";
 import { Blog } from "@/types/blog";
 import { useAuth } from "@/contexts/AuthContext";
-import { getPublishedBlogs } from "@/lib/firebaseBlogService";
+import { getPublishedBlogs } from "@/hooks/lib/firebaseBlogService";
 import { blogData } from "@/data/sampleData";
 
 export default function Blogs() {

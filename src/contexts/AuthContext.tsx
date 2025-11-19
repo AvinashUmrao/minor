@@ -8,8 +8,8 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../firebase";
-import { initializeUserProfile } from "@/lib/firebaseUserService";
-import { initializeUserProgress, updateActiveDays } from "@/lib/userProgressService";
+import { initializeUserProfile } from "@/hooks/lib/firebaseUserService";
+import { initializeUserProgress, updateActiveDays } from "@/hooks/lib/userProgressService";
 
 // Define User interface
 interface User {

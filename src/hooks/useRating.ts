@@ -7,7 +7,7 @@ import {
   getRatingMilestones,
   getImprovementTips,
   getRatingStats,
-} from "@/lib/ratingUtils";
+} from "@/hooks/lib/ratingUtils";
 
 export const useRating = () => {
   const [rating, setRating] = useState<UserRating>(getUserRating());

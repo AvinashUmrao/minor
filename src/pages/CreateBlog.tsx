@@ -22,9 +22,9 @@ import {
   generateSlug,
   calculateReadTime,
   fileToBase64,
-} from "@/lib/localStorageUtils";
+} from "@/hooks/lib/localStorageUtils";
 import { BLOG_CATEGORIES } from "@/types/blog";
-import { createBlog } from "@/lib/firebaseBlogService";
+import { createBlog } from "@/hooks/lib/firebaseBlogService";
 
 export default function CreateBlog() {
   const navigate = useNavigate();

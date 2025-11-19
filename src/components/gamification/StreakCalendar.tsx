@@ -8,8 +8,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Flame, TrendingUp, Calendar } from "lucide-react";
-import { getActivityIntensity } from "@/lib/streakUtils";
-import { cn } from "@/lib/utils";
+import { getActivityIntensity } from "@/hooks/lib/streakUtils";
+import { cn } from "@/hooks/lib/utils";
 
 interface StreakCalendarProps {
   calendarData: StreakData[];

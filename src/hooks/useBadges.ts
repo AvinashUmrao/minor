@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { BadgeProgress } from "@/types/gamification";
 import { BADGES } from "@/data/badges";
-import { getUserBadges, cleanupOldBadgeStorage } from "@/lib/badgeUtils";
+import { getUserBadges, cleanupOldBadgeStorage } from "@/hooks/lib/badgeUtils";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const useBadges = () => {

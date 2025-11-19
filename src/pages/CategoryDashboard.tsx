@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFirebaseQuiz } from "@/hooks/useFirebaseQuiz";
-import { getCategoryPerformance, CategoryPerformance } from "@/lib/firebaseUserService";
+import { getCategoryPerformance, CategoryPerformance } from "@/hooks/lib/firebaseUserService";
 import {
   Trophy,
   TrendingUp,

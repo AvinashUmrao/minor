@@ -8,7 +8,7 @@ import {
   isStreakAtRisk,
   getStreakMessage,
   useStreakFreeze,
-} from "@/lib/streakUtils";
+} from "@/hooks/lib/streakUtils";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const useStreak = () => {

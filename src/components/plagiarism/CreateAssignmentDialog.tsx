@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
 import { Assignment, AssignmentType } from '@/types/plagiarism';
-import { saveAssignment } from '@/lib/plagiarismStorage';
+import { saveAssignment } from '@/hooks/lib/plagiarismStorage';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface CreateAssignmentDialogProps {

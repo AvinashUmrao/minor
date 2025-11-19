@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { getStudentProgress, getImprovementSuggestions } from "@/lib/gamification";
-import { generateProgressPDF } from "@/lib/pdfGenerator";
+import { getStudentProgress, getImprovementSuggestions } from "@/hooks/lib/gamification";
+import { generateProgressPDF } from "@/hooks/lib/pdfGenerator";
 
 export const ProgressHistory = () => {
   const progress = getStudentProgress();

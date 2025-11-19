@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getCategory, getRating } from "@/lib/adaptive";
+import { getCategory, getRating } from "@/hooks/lib/adaptive";
 import { jeeSubjects, getJeeTopicsBySubject } from "@/data/jeeQuestionBank";
-import { getStreakData, getEarnedBadges } from "@/lib/gamification";
+import { getStreakData, getEarnedBadges } from "@/hooks/lib/gamification";
 
 interface JeeQuizStartProps {
   onStart: (quizType: 'topic' | 'subject' | 'full', duration: number, subject?: string, topic?: string) => void;

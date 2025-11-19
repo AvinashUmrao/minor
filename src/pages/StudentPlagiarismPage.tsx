@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AssignmentCard } from '@/components/plagiarism/AssignmentCard';
 import { SubmissionForm } from '@/components/plagiarism/SubmissionForm';
 import { Assignment } from '@/types/plagiarism';
-import { getAssignments, getSubmission } from '@/lib/plagiarismStorage';
+import { getAssignments, getSubmission } from '@/hooks/lib/plagiarismStorage';
 import { FileText, ArrowLeft, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 

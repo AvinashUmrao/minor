@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Lock, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/hooks/lib/utils";
 
 interface BadgeCardProps {
   badgeProgress: BadgeProgress;
