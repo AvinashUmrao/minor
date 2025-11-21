@@ -15,6 +15,8 @@ import { generateProgressReportPDF } from "@/hooks/lib/progressPdfGenerator";
 import { getUserProgress, getActivityCalendar } from "@/hooks/lib/userProgressService";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProgress } from "@/types/userProgress";
+import { UserStreak, UserRating } from "@/types/gamification";
+import { determineCategory } from "@/hooks/lib/firebaseUserService";
 
 const ProgressPage = () => {
   const { user, isTeacher } = useAuth();
@@ -22,8 +24,22 @@ const ProgressPage = () => {
   // Safely load hooks with fallbacks
   let allBadges: any[] = [];
   let badgeStats = { total: 0, earned: 0, locked: 0, inProgress: 0 };
-  let streak = { currentStreak: 0, longestStreak: 0 };
-  let rating = { current: 1200, subjectRatings: [] };
+  let streak: UserStreak = {
+    currentStreak: 0,
+    longestStreak: 0,
+    lastActivityDate: "",
+    activityHistory: [],
+    freezesRemaining: 1,
+    totalActiveDays: 0,
+  };
+  let rating: UserRating = {
+    current: 1200,
+    peak: 1200,
+    history: [],
+    subjectRatings: [],
+    percentile: 50,
+    trend: "stable",
+  };
   let breakdown: any = {};
   let milestones: any[] = [];
   let tips: any[] = [];
@@ -98,6 +114,13 @@ const ProgressPage = () => {
         return;
       }
       
+      const overallAccuracy = userProgress.totalQuestionsAttempted > 0 
+        ? (userProgress.correctAnswers / userProgress.totalQuestionsAttempted) * 100 
+        : 0;
+      const currentCategory = userProgress.totalQuestionsAttempted > 0
+        ? determineCategory(overallAccuracy, userProgress.correctAnswers, userProgress.totalQuestionsAttempted)
+        : 'average';
+      
       generateProgressReportPDF({
         badges: allBadges,
         badgeStats,
@@ -117,13 +140,11 @@ const ProgressPage = () => {
         userProfile: {
           currentRating: userProgress.currentRating,
           peakRating: userProgress.highestRating,
-          currentCategory: 'good',
+          currentCategory,
           totalQuizzes: userProgress.totalQuizzesTaken,
           totalQuestionsAttempted: userProgress.totalQuestionsAttempted,
           totalCorrectAnswers: userProgress.correctAnswers,
-          overallAccuracy: userProgress.totalQuestionsAttempted > 0 
-            ? (userProgress.correctAnswers / userProgress.totalQuestionsAttempted) * 100 
-            : 0,
+          overallAccuracy,
         }
       });
     } catch (error) {

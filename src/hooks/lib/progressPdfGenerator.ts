@@ -110,13 +110,16 @@ export const generateProgressReportPDF = (data: ProgressReportData) => {
   yPos += 35;
   doc.setTextColor(0, 0, 0);
   
-  // Weekly Activity Section (Dummy Data)
+  // Weekly Activity Section
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
   doc.text('Weekly Activity (Last 7 Days)', 20, yPos);
   yPos += 5;
   
-  const weekData = generateDummyWeekData();
+  const sortedCalendarData = [...data.calendarData].sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+  const weekData = sortedCalendarData.slice(-7);
   const weekTableData = weekData.map(day => {
     const date = new Date(day.date);
     const dayName = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -153,12 +156,12 @@ export const generateProgressReportPDF = (data: ProgressReportData) => {
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setFillColor(240, 240, 240);
-  doc.roundedRect(20, yPos, 170, 25, 3, 3, 'F');
+  doc.roundedRect(20, yPos, 170, 30, 3, 3, 'F');
   
   yPos += 8;
-  doc.text(`📊 Weekly Summary: ${totalActivities} total activities | ${totalQuizzes} quizzes | ${Math.round(totalMinutes / 60)}h ${totalMinutes % 60}m study time | ${totalBlogs} blogs`, 25, yPos);
+  doc.text(`Weekly Summary: ${totalActivities} total activities | ${totalQuizzes} quizzes | ${Math.round(totalMinutes / 60)}h ${totalMinutes % 60}m study time | ${totalBlogs} blogs`, 25, yPos);
   yPos += 7;
-  doc.text(`📈 Daily Average: ${(totalActivities / 7).toFixed(1)} activities | ${(totalMinutes / 7).toFixed(0)} minutes`, 25, yPos);
+  doc.text(`Daily Average: ${(totalActivities / 7).toFixed(1)} activities | ${(totalMinutes / 7).toFixed(0)} minutes`, 25, yPos);
   
   yPos += 20;
   
@@ -285,7 +288,7 @@ export const generateProgressReportPDF = (data: ProgressReportData) => {
     ['Streak Bonus', `+${data.breakdown.streakBonus}`],
     ['Consistency Bonus', `+${data.breakdown.consistencyBonus}`],
     ['Penalty', data.breakdown.penalty < 0 ? data.breakdown.penalty.toString() : '0'],
-    ['Total', data.breakdown.total.toString()],
+    ['Total (Current Rating)', currentRating.toString()],
   ];
   
   autoTable(doc, {
