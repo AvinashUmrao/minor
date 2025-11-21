@@ -166,7 +166,7 @@ Ensure you have the following installed:
 
 ```bash
 git clone https://github.com/AvinashUmrao/edusmartPlus.git
-cd learnwise-smart-hub
+cd edusmartPlus
 ```
 
 2. **Install dependencies**
@@ -630,8 +630,5 @@ If you find this project helpful, please consider:
 
 **Built with ❤️ for students, by students**
 
-[Documentation](./QUICK_START.md) • [Report Bug](https://github.com/AvinashUmrao/edusmartPlus/issues) • [Request Feature](https://github.com/AvinashUmrao/edusmartPlus/issues)
-
+[Report Bug](https://github.com/AvinashUmrao/minor/issues) • [Request Feature](https://github.com/AvinashUmrao/minor/issues) • [Link](https://github.com/AvinashUmrao/minor.git)
 </div>
-#   n e w m i n o r  
- 
