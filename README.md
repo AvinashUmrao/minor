@@ -1,4 +1,4 @@
-# Edusmart+
+# EduSmart+
 
 <div align="center">
 
