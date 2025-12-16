@@ -1,8 +1,8 @@
-# LearnWise Smart Hub
+# Edusmart+
 
 <div align="center">
 
-![LearnWise Smart Hub](https://img.shields.io/badge/LearnWise-Smart%20Hub-blue?style=for-the-badge)
+![Edusmart+](https://img.shields.io/badge/LearnWise-Smart%20Hub-blue?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-18.3.1-61DAFB?style=for-the-badge&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-3178C6?style=for-the-badge&logo=typescript)
 ![Vite](https://img.shields.io/badge/Vite-5.4.19-646CFF?style=for-the-badge&logo=vite)
@@ -32,7 +32,7 @@ A comprehensive, intelligent educational platform designed to revolutionize exam
 
 ## 🎯 Overview
 
-**LearnWise Smart Hub** is a next-generation educational platform that combines adaptive learning algorithms, comprehensive gamification, and intelligent plagiarism detection to create an engaging and effective learning environment for students preparing for competitive exams.
+**Edusmart+** is a next-generation educational platform that combines adaptive learning algorithms, comprehensive gamification, and intelligent plagiarism detection to create an engaging and effective learning environment for students preparing for competitive exams.
 
 The platform supports multiple examination systems including **GATE**, **JEE**, **CAT**, **NEET**, and **UPSC**, providing students with personalized learning paths, real-time progress tracking, and competitive leaderboards.
 
@@ -232,7 +232,7 @@ npm run preview
 ## 📁 Project Structure
 
 ```
-learnwise-smart-hub/
+Edusmart+/
 ├── public/                      # Static assets
 │   ├── favicon.ico
 │   ├── placeholder.svg
@@ -541,7 +541,7 @@ This project is licensed under the **MIT License**.
 ```
 MIT License
 
-Copyright (c) 2025 LearnWise Smart Hub
+Copyright (c) 2025 Edusmart+
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
